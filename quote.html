@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Request a Quote · Ridgeline Renovations</title>
+<meta name="theme-color" content="#0B1B33">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: navy band with the company name over a single white form card; gold for the action. */
+:root{
+  --navy:#0B1B33; --navy-2:#13294A; --navy-ink:#C3CFE2; --gold:#C9A227; --gold-2:#E3C566;
+  --paper:#F3F5F9; --white:#fff; --ink:#0E1A2B; --muted:#5A6A81; --line:#E1E6EE; --bad:#B42121; --ok:#157A3C;
+  --display:"Fraunces",Georgia,serif; --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.band{background:var(--navy);color:#fff;padding:calc(28px + env(safe-area-inset-top,0px)) 16px 84px}
+.band-in{max-width:560px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:11px}
+.ic{width:38px;height:38px;border-radius:9px;background:var(--gold);color:var(--navy);display:grid;place-items:center;font-family:var(--display);font-weight:600;font-size:20px}
+.nm{font-family:var(--display);font-weight:600;font-size:20px}
+h1{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.15;margin:26px 0 8px;text-wrap:balance}
+.lede{color:var(--navy-ink);margin:0}
+.wrap{max-width:560px;margin:-60px auto 0;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px))}
+.card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 12px 40px rgba(11,27,51,.08)}
+form{display:grid;gap:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:grid;gap:6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:9px;padding:11px 12px;text-transform:none;letter-spacing:0;font-weight:400}
+textarea{resize:vertical;min-height:110px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.2)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+button{font:inherit;font-weight:700;font-size:16px;background:var(--gold);color:var(--navy);border:0;border-radius:10px;padding:14px;cursor:pointer}
+button:hover{background:var(--gold-2)}
+button:disabled{opacity:.6;cursor:default}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.err{color:var(--bad);font-size:14px;margin:0}
+.fine{color:var(--muted);font-size:12.5px;margin:0;text-align:center}
+.done{text-align:center;padding:12px 4px}
+.check{width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--navy);display:grid;place-items:center;margin:0 auto 14px}
+.done h2{font-family:var(--display);font-weight:600;font-size:24px;margin:0 0 8px}
+.done p{color:var(--muted);margin:0}
+.foot{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
+[hidden]{display:none!important}
+@media (max-width:440px){.two{grid-template-columns:1fr}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="band"><div class="band-in">
+  <div class="brand"><div class="ic" id="logoText">R</div><div class="nm" id="companyName">Ridgeline Renovations</div></div>
+  <h1>Tell us about your project</h1>
+  <p class="lede">We'll get back to you quickly with times for a free in-home consultation.</p>
+</div></div>
+
+<main class="wrap">
+  <div class="card">
+    <form id="f" novalidate>
+      <div class="two">
+        <label>Name<input id="name" name="name" autocomplete="name" required></label>
+        <label>Phone<input id="phone" name="phone" type="tel" autocomplete="tel"></label>
+      </div>
+      <label>Email<input id="email" name="email" type="email" autocomplete="email" required></label>
+      <div class="two">
+        <label>Project type<select id="service" name="service"></select></label>
+        <label>Budget<select id="budget" name="budget">
+          <option value="0">Not sure yet</option>
+          <option value="10000">Under $15k</option>
+          <option value="22000">$15k to $30k</option>
+          <option value="45000">$30k to $60k</option>
+          <option value="80000">$60k to $100k</option>
+          <option value="125000">$100k or more</option>
+        </select></label>
+      </div>
+      <label>What would you like done?<textarea id="message" name="message" placeholder="A few sentences about the space, what you'd change, and your timing."></textarea></label>
+      <div class="hp" aria-hidden="true"><label>Website<input id="website" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <p class="err" id="err" hidden></p>
+      <button type="submit" id="btn">Request my free consultation</button>
+      <p class="fine">We only use your details to reply to this request.</p>
+    </form>
+    <div class="done" id="done" hidden>
+      <div class="check"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+      <h2 id="thanks">Thanks, we got it.</h2>
+      <p>Your request is in. Watch your inbox for a reply with consultation times.</p>
+    </div>
+  </div>
+  <div class="foot">Powered by BuildFlow · Weblina LLC</div>
+</main>
+
+<script>
+/* ── Edit per business (keep in sync with index.html CONFIG) ── */
+var FORM_CONFIG = {
+  companyName: "Ridgeline Renovations",
+  logoText:    "R",
+  apiUrl:      "",   // same Cloudflare Worker URL as the app
+  services:    ["Kitchen Remodel","Bathroom Remodel","Basement Finish","Addition","Deck & Patio","Whole-Home Renovation"],
+};
+(function(){
+  var C = FORM_CONFIG, $ = function(id){ return document.getElementById(id); };
+  $("companyName").textContent = C.companyName; $("logoText").textContent = C.logoText;
+  document.title = "Request a Quote · " + C.companyName;
+  C.services.forEach(function(s){ var o = document.createElement("option"); o.textContent = s; $("service").appendChild(o); });
+  var p = new URLSearchParams(location.search); var src = p.get("src") || "Website form";
+  $("f").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var err = $("err"); err.hidden = true;
+    var lead = { name:$("name").value.trim(), email:$("email").value.trim(), phone:$("phone").value.trim(), service:$("service").value,
+                 est:Number($("budget").value)||0, message:$("message").value.trim(), website:$("website").value, source:src };
+    if(!lead.name){ err.textContent = "Please add your name."; err.hidden = false; $("name").focus(); return; }
+    if(!/^\S+@\S+\.\S+$/.test(lead.email)){ err.textContent = "Please add a valid email so we can reply."; err.hidden = false; $("email").focus(); return; }
+    if(!C.apiUrl){ err.textContent = "This form isn't connected yet. Set apiUrl in FORM_CONFIG."; err.hidden = false; return; }
+    var btn = $("btn"); btn.disabled = true; btn.textContent = "Sending…";
+    fetch(C.apiUrl, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify({action:"submitLead", lead:lead}) })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d.error) throw new Error(d.error);
+        $("f").hidden = true; $("done").hidden = false;
+        $("thanks").textContent = "Thanks, " + lead.name.split(" ")[0] + ". We got it.";
+      })
+      .catch(function(e){ err.textContent = (e && e.message) ? e.message : "Something went wrong. Please try again."; err.hidden = false; btn.disabled = false; btn.textContent = "Request my free consultation"; });
+  });
+})();
+</script>
+</body>
+</html>
