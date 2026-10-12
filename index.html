@@ -3,127 +3,1377 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Request a Quote · Ridgeline Renovations</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>BuildFlow Demo</title>
 <meta name="theme-color" content="#0B1B33">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* Layout: navy band with the company name over a single white form card; gold for the action. */
+/* Layout: navy app chrome (header + sidebar) framing a white working canvas; gold marks what is active and everything the AI does. */
 :root{
-  --navy:#0B1B33; --navy-2:#13294A; --navy-ink:#C3CFE2; --gold:#C9A227; --gold-2:#E3C566;
-  --paper:#F3F5F9; --white:#fff; --ink:#0E1A2B; --muted:#5A6A81; --line:#E1E6EE; --bad:#B42121; --ok:#157A3C;
-  --display:"Fraunces",Georgia,serif; --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --navy:#0B1B33; --navy-2:#13294A; --navy-3:#1F3B63; --navy-ink:#C3CFE2; --navy-mute:#7F93B3;
+  --gold:#C9A227; --gold-2:#E3C566; --gold-soft:#FBF4DF; --gold-ink:#7A5E0C;
+  --paper:#F3F5F9; --white:#FFFFFF; --ink:#0E1A2B; --muted:#5A6A81; --line:#E1E6EE; --line-2:#EEF1F6;
+  --ok:#157A3C; --ok-bg:#E5F3EA; --warn:#A6580A; --warn-bg:#FCF0DC; --bad:#B42121; --bad-bg:#FBE8E8; --info:#1E4FC2; --info-bg:#E6EDFB;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   color-scheme:light;
 }
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
-.band{background:var(--navy);color:#fff;padding:calc(28px + env(safe-area-inset-top,0px)) 16px 84px}
-.band-in{max-width:560px;margin:0 auto}
-.brand{display:flex;align-items:center;gap:11px}
-.ic{width:38px;height:38px;border-radius:9px;background:var(--gold);color:var(--navy);display:grid;place-items:center;font-family:var(--display);font-weight:600;font-size:20px}
-.nm{font-family:var(--display);font-weight:600;font-size:20px}
-h1{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.15;margin:26px 0 8px;text-wrap:balance}
-.lede{color:var(--navy-ink);margin:0}
-.wrap{max-width:560px;margin:-60px auto 0;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px))}
-.card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 12px 40px rgba(11,27,51,.08)}
-form{display:grid;gap:14px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-label{display:grid;gap:6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:9px;padding:11px 12px;text-transform:none;letter-spacing:0;font-weight:400}
-textarea{resize:vertical;min-height:110px}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.2)}
-.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-button{font:inherit;font-weight:700;font-size:16px;background:var(--gold);color:var(--navy);border:0;border-radius:10px;padding:14px;cursor:pointer}
-button:hover{background:var(--gold-2)}
-button:disabled{opacity:.6;cursor:default}
+button{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.err{color:var(--bad);font-size:14px;margin:0}
-.fine{color:var(--muted);font-size:12.5px;margin:0;text-align:center}
-.done{text-align:center;padding:12px 4px}
-.check{width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--navy);display:grid;place-items:center;margin:0 auto 14px}
-.done h2{font-family:var(--display);font-weight:600;font-size:24px;margin:0 0 8px}
-.done p{color:var(--muted);margin:0}
-.foot{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
-[hidden]{display:none!important}
-@media (max-width:440px){.two{grid-template-columns:1fr}h1{font-size:26px}}
+#root{height:100%}
+.app{display:flex;flex-direction:column;height:100%}
+
+/* Header */
+.hdr{height:62px;flex-shrink:0;background:var(--navy);border-bottom:1px solid var(--navy-3);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 18px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.brand-ic{width:36px;height:36px;flex-shrink:0;border-radius:9px;background:var(--gold);color:var(--navy);font-family:var(--display);font-weight:700;font-size:19px;display:grid;place-items:center}
+.brand-name{color:#fff;font-family:var(--display);font-weight:600;font-size:20px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-r{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.demo-chip{display:flex;align-items:center;gap:8px;border:1px solid rgba(201,162,39,.45);color:var(--gold-2);border-radius:999px;padding:4px 6px 4px 12px;font-size:12px;font-weight:600}
+.demo-chip button{background:var(--navy-2);border:1px solid var(--navy-3);color:var(--navy-ink);border-radius:999px;padding:3px 10px;font-size:11.5px;cursor:pointer}
+.demo-chip button:hover{color:#fff}
+.bf-logo{height:34px;width:auto;display:block}
+
+/* Shell */
+.shell{flex:1;display:flex;min-height:0}
+.side{width:240px;flex-shrink:0;background:var(--navy);overflow-y:auto;padding:12px 10px 16px;display:flex;flex-direction:column}
+.side-label{color:var(--navy-mute);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;padding:16px 10px 6px}
+.side-label.ai{color:var(--gold-2);display:flex;align-items:center;gap:6px}
+.si{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:9px 10px;color:var(--navy-ink);cursor:pointer;font-size:13.5px;font-weight:500}
+.si:hover{background:var(--navy-2);color:#fff}
+.si.on{background:var(--navy-2);color:#fff;box-shadow:inset 3px 0 0 var(--gold)}
+.si.sub{padding:7px 10px 7px 38px;font-size:12.5px;color:var(--navy-mute)}
+.si.sub.on,.si.sub:hover{color:#fff}
+.si .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.si .cnt{margin-left:auto;background:var(--gold);color:var(--navy);border-radius:999px;font-size:11px;font-weight:700;padding:1px 7px}
+.si .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-foot{margin-top:auto;padding:18px 10px 4px;color:var(--navy-mute);font-size:11px;line-height:1.5}
+.side-foot b{color:var(--gold-2);font-weight:600}
+.main{flex:1;overflow-y:auto;min-width:0}
+.wrap{max-width:1200px;margin:0 auto;padding:26px 26px 48px}
+
+/* Type + common */
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.ph-t{min-width:0}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.eyebrow.gold{color:var(--gold-ink)}
+h1.t{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.15;margin:0;letter-spacing:-.015em;text-wrap:balance}
+h2.t{font-family:var(--display);font-weight:600;font-size:19px;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);margin-top:5px}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.grid{display:grid;gap:16px}
+.g-kpi{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.g-split{grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);align-items:start}
+.g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g-proj{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.kpi .l{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.kpi .v{font-family:var(--display);font-size:27px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi .n{font-size:12.5px;color:var(--muted);margin-top:3px}
+.kpi .n.bad{color:var(--bad)} .kpi .n.ok{color:var(--ok)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:var(--gold);color:var(--navy);border:1px solid var(--gold);border-radius:8px;padding:9px 15px;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--gold-2);border-color:var(--gold-2)}
+.btn.navy{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.navy:hover{background:var(--navy-2)}
+.btn.ghost{background:var(--white);border-color:var(--line);color:var(--ink);font-weight:600}
+.btn.ghost:hover{border-color:var(--navy-mute)}
+.btn.sm{padding:6px 11px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:default}
+.lnk{background:none;border:0;padding:0;color:var(--info);font-weight:600;cursor:pointer;font-size:13px}
+.x{background:none;border:0;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;display:grid;place-items:center}
+.x:hover{background:var(--line-2);color:var(--bad)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap;border:0;line-height:1.6}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.info{background:var(--info-bg);color:var(--info)}
+.pill.mute{background:var(--line-2);color:var(--muted)} .pill.gold{background:var(--gold-soft);color:var(--gold-ink)}
+.pill.navy{background:var(--navy);color:#fff}
+button.pill{cursor:pointer}
+.bar{height:8px;background:var(--line-2);border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--navy);border-radius:99px}
+.bar>i.gold{background:var(--gold)} .bar>i.bad{background:var(--bad)} .bar>i.ok{background:var(--ok)}
+.lrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line-2);min-width:0}
+.lrow:first-child{border-top:0}
+.lrow .grow{flex:1;min-width:0}
+.lrow .tt{font-weight:600}
+.lrow .mt{font-size:12.5px;color:var(--muted);margin-top:2px}
+.over{color:var(--bad);font-weight:600}
+.empty{padding:26px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
+
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:20px;scrollbar-width:none}
+.tab{padding:10px 14px;border:0;background:none;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--ink);border-bottom-color:var(--gold)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--white);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--muted)}
+.chip:hover{color:var(--ink)}
+.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+
+input,select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit;color:var(--ink);background:var(--white)}
+textarea{resize:vertical;line-height:1.5}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.18)}
+.f{display:grid;gap:5px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;min-width:0}
+.f input,.f select,.f textarea{text-transform:none;letter-spacing:0;font-weight:400;font-size:14px}
+.form{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.form .full{grid-column:1/-1}
+.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+
+/* AI surfaces */
+.aibox{background:var(--navy);color:#fff;border-radius:14px;padding:22px;position:relative;overflow:hidden;border:1px solid var(--navy-3)}
+.aibox::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(201,162,39,.22),transparent 70%);pointer-events:none}
+.ai-tag{display:inline-flex;align-items:center;gap:6px;color:var(--gold-2);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.aibox h2.t{color:#fff;margin-top:8px}
+.aibox ul{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:10px;position:relative;z-index:1}
+.aibox li{display:flex;gap:10px;align-items:flex-start;color:var(--navy-ink)}
+.aibox li b{color:#fff;font-weight:600}
+.aibox li .mk{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;background:var(--gold)}
+.aibox li .mk.bad{background:#F07A7A} .aibox li .mk.ok{background:#6FCF97}
+.aibox li .lnk{color:var(--gold-2);margin-left:4px;font-size:12.5px}
+.aibox .btn.ghost{background:transparent;color:#fff;border-color:var(--navy-3)}
+.spark{color:var(--gold)}
+
+.feed{display:grid;gap:0}
+.feed .lrow .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex-shrink:0;background:var(--gold-soft);color:var(--gold-ink)}
+
+/* Projects */
+.pcard{cursor:pointer;display:flex;flex-direction:column;gap:12px;transition:border-color .15s,transform .15s;text-align:left;font:inherit}
+.pcard:hover{border-color:var(--gold);transform:translateY(-1px)}
+.pcard .nm{font-family:var(--display);font-weight:600;font-size:17px;line-height:1.25}
+.pcard .meta{font-size:12.5px;color:var(--muted)}
+.pcard .fig{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+.pcard .fig b{color:var(--ink);font-variant-numeric:tabular-nums}
+.phead{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.cat-row{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) auto;gap:12px;align-items:center;padding:7px 0;font-size:13px}
+.cat-row .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Tasks */
+.trow .chk{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line);background:var(--white);display:grid;place-items:center;cursor:pointer;flex-shrink:0;color:#fff}
+.trow .chk.on{background:var(--ok);border-color:var(--ok)}
+.trow.done .tt{text-decoration:line-through;color:var(--muted)}
+
+/* Timeline */
+.tl{position:relative;display:grid;gap:4px}
+.tl-i{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;position:relative;padding-bottom:18px}
+.tl-i::before{content:"";position:absolute;left:16px;top:30px;bottom:0;width:2px;background:var(--line)}
+.tl-i:last-child::before{display:none}
+.tl-dot{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);background:var(--white);display:grid;place-items:center;cursor:pointer;color:transparent}
+.tl-dot.on{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.tl-dot.next{border-color:var(--gold)}
+
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.tbl td.r,.tbl th.r{text-align:right}
+
+/* Quotes */
+.qitem + .qitem{margin-top:16px}
+.qrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line-2)}
+.qrow.acc{background:linear-gradient(90deg,var(--gold-soft),transparent);margin:0 -18px;padding:11px 18px}
+
+/* Vendors */
+.vcard .nm{font-weight:700;font-size:15px}
+.vcard .ct{display:grid;gap:3px;font-size:13px;margin-top:10px;user-select:text}
+.stars{color:var(--gold);font-weight:700;font-size:12.5px}
+
+/* Leads */
+.auto{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.auto .grow{flex:1;min-width:220px}
+.sw{width:50px;height:28px;border-radius:999px;background:var(--line);border:0;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s}
+.sw.on{background:var(--gold)}
+.sw.on i{left:25px}
+.inbox{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:16px;align-items:start}
+.ilist{padding:6px}
+.irow{display:block;width:100%;text-align:left;background:none;border:0;border-radius:9px;padding:12px;cursor:pointer;border-left:3px solid transparent}
+.irow:hover{background:var(--paper)}
+.irow.on{background:var(--paper);border-left-color:var(--gold)}
+.irow .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.irow .nm{font-weight:700}
+.irow .tm{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.irow .ms{font-size:12.5px;color:var(--muted);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.irow .row{margin-top:7px}
+.bubble{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;white-space:pre-wrap;line-height:1.55}
+.bubble.ai{background:var(--gold-soft);border-color:#EEDDA6}
+.writing{display:inline-flex;gap:4px;align-items:center}
+.writing i{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:blink 1s infinite}
+.writing i:nth-child(2){animation-delay:.15s}.writing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.kan{display:grid;grid-template-columns:repeat(5,minmax(210px,1fr));gap:12px;overflow-x:auto;padding-bottom:8px}
+.kcol{background:var(--line-2);border-radius:12px;padding:10px;min-height:120px}
+.kcol-h{display:flex;justify-content:space-between;align-items:baseline;padding:4px 4px 10px;font-weight:700;font-size:13px}
+.kcol-h span{font-weight:600;color:var(--muted);font-size:12px}
+.kcard{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:11px;margin-bottom:8px}
+.kcard select{margin-top:8px;padding:5px 8px;font-size:12.5px}
+
+/* Social */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:0;background:var(--white);padding:8px 14px;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--navy);color:#fff}
+.mock{background:var(--white);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:440px;margin:0 auto;width:100%}
+.mock-h{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.mock-h .av{width:36px;height:36px;border-radius:50%;background:var(--navy);color:var(--gold);display:grid;place-items:center;font-family:var(--display);font-weight:700}
+.mock-h .nm{font-weight:700;font-size:13.5px}
+.mock-h .tm{font-size:11.5px;color:var(--muted)}
+.mock-cap{padding:0 14px 12px;white-space:pre-wrap;font-size:13.5px;line-height:1.5}
+.mock-cap.ig{padding:10px 14px 14px}
+.mock-f{display:flex;justify-content:space-around;border-top:1px solid var(--line-2);padding:9px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.pimg{position:relative;aspect-ratio:1.4/1;max-width:100%;overflow:hidden;background:var(--navy);color:#fff;display:flex}
+.pimg.sq{aspect-ratio:1/1}
+.pimg .half{flex:1;position:relative;display:flex;align-items:flex-end;padding:14px}
+.pimg .before{background:repeating-linear-gradient(135deg,#5B6372 0 10px,#535A68 10px 20px);filter:saturate(.6)}
+.pimg .after{background:linear-gradient(160deg,#F1E3B8 0%,#D9B85C 45%,#1F3B63 100%)}
+.pimg .lbl{background:rgba(11,27,51,.82);color:#fff;font-size:11px;font-weight:700;letter-spacing:.14em;padding:5px 9px;border-radius:5px}
+.pimg .after .lbl{background:var(--gold);color:var(--navy)}
+.pimg .center{flex:1;display:flex;flex-direction:column;justify-content:center;padding:26px;background:radial-gradient(circle at 85% 15%,rgba(201,162,39,.35),transparent 55%),var(--navy)}
+.pimg .center .k{color:var(--gold-2);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700}
+.pimg .center .h{font-family:var(--display);font-size:28px;font-weight:600;line-height:1.1;margin-top:8px}
+.pimg .center .s{color:var(--navy-ink);font-size:13px;margin-top:10px}
+.pimg .center .rule{width:44px;height:3px;background:var(--gold);margin-top:14px}
+.pimg .wm{position:absolute;right:12px;top:10px;font-size:10.5px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.85);text-transform:uppercase}
+
+/* Chat */
+.chat{display:flex;flex-direction:column;height:calc(100vh - 62px - 150px);min-height:420px}
+.msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:4px 2px 12px}
+.msg{max-width:min(620px,88%);padding:12px 15px;border-radius:14px;line-height:1.55}
+.msg.me{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:4px}
+.msg.ai{align-self:flex-start;background:var(--white);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg p{margin:0}
+.msg p + p{margin-top:6px}
+.msg .li{display:flex;gap:8px;margin-top:5px}
+.msg .li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:8px;flex-shrink:0}
+.composer{display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.composer input{flex:1}
+
+/* Modal + toast */
+.mbg{position:fixed;inset:0;background:rgba(11,27,51,.55);display:grid;place-items:center;z-index:60;padding:16px}
+.modal{background:var(--white);border-radius:14px;width:min(540px,100%);max-height:calc(100% - 32px);overflow:auto;padding:22px;box-shadow:0 20px 60px rgba(11,27,51,.35)}
+.modal-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 16px;border-radius:10px;z-index:70;display:flex;gap:9px;align-items:center;box-shadow:0 10px 30px rgba(11,27,51,.3);font-weight:500;max-width:calc(100% - 32px)}
+.toast .spark{flex-shrink:0}
+
+/* Mobile */
+.bnav{display:none}
+.mobile-only{display:none}
+@media (max-width:1000px){.g-split{grid-template-columns:minmax(0,1fr)}.inbox{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:820px){
+  .side{display:none}
+  .mobile-only{display:revert}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--navy);border-top:1px solid var(--navy-3);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));z-index:40}
+  .bnav button{flex:1;background:none;border:0;color:var(--navy-mute);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;padding:5px 0;cursor:pointer}
+  .bnav button.on{color:var(--gold-2)}
+  .wrap{padding:18px 16px 96px}
+  h1.t{font-size:24px}
+  .hdr{padding:0 14px;height:58px}
+  .brand-name{font-size:17px}
+  .bf-logo{height:26px}
+  .demo-chip span{display:none}
+  .demo-chip{padding:3px}
+  .g-2,.form{grid-template-columns:minmax(0,1fr)}
+  .chat{height:calc(100vh - 58px - 200px)}
+  .inbox.has-sel .ilist-card{display:none}
+  .inbox:not(.has-sel) .idetail{display:none}
+  .cat-row{grid-template-columns:minmax(0,110px) minmax(0,1fr) auto}
+}
+@media (max-width:480px){.bf-logo{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Live mode */
+.live-chip{display:flex;align-items:center;gap:7px;border:1px solid rgba(111,207,151,.45);color:#9FE2B9;border-radius:999px;padding:4px 6px 4px 11px;font-size:12px;font-weight:600}
+.live-chip .ld{width:7px;height:7px;border-radius:50%;background:#6FCF97;box-shadow:0 0 0 3px rgba(111,207,151,.2)}
+.live-chip button{background:var(--navy-2);border:1px solid var(--navy-3);color:var(--navy-ink);border-radius:999px;padding:3px 10px;font-size:11.5px;cursor:pointer}
+.pin-wrap{flex:1;display:grid;place-items:center;padding:24px 16px;background:radial-gradient(circle at 80% 10%,rgba(201,162,39,.18),transparent 45%),var(--navy)}
+.pin-card{background:var(--white);border-radius:16px;padding:28px;width:min(380px,100%);display:grid;gap:14px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.pin-card input{font-size:22px;letter-spacing:.4em;text-align:center;font-variant-numeric:tabular-nums}
+.err{color:var(--bad);font-size:13px}
+.qr{display:grid;place-items:center;padding:16px;background:var(--white);border:1px solid var(--line);border-radius:12px}
+.qr img,.qr canvas{display:block;max-width:100%}
+.url-box{display:flex;gap:8px;align-items:center}
+.url-box code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;user-select:all}
+.photo-pick{display:flex;align-items:center;gap:12px;border:1px dashed var(--line);border-radius:10px;padding:10px;cursor:pointer}
+.photo-pick:hover{border-color:var(--gold)}
+.photo-pick img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+.photo-pick input{display:none}
+.pimg-photo{display:block;width:100%;aspect-ratio:1.4/1;object-fit:cover;max-width:100%}
+.pimg-photo.sq{aspect-ratio:1/1}
+.note{font-size:12.5px;color:var(--muted)}
+.note.bad{color:var(--bad)}
+a.lnk{text-decoration:none}
 </style>
+
 </head>
 <body>
-<div class="band"><div class="band-in">
-  <div class="brand"><div class="ic" id="logoText">R</div><div class="nm" id="companyName">Ridgeline Renovations</div></div>
-  <h1>Tell us about your project</h1>
-  <p class="lede">We'll get back to you quickly with times for a free in-home consultation.</p>
-</div></div>
+<div id="root"></div>
 
-<main class="wrap">
-  <div class="card">
-    <form id="f" novalidate>
-      <div class="two">
-        <label>Name<input id="name" name="name" autocomplete="name" required></label>
-        <label>Phone<input id="phone" name="phone" type="tel" autocomplete="tel"></label>
-      </div>
-      <label>Email<input id="email" name="email" type="email" autocomplete="email" required></label>
-      <div class="two">
-        <label>Project type<select id="service" name="service"></select></label>
-        <label>Budget<select id="budget" name="budget">
-          <option value="0">Not sure yet</option>
-          <option value="10000">Under $15k</option>
-          <option value="22000">$15k to $30k</option>
-          <option value="45000">$30k to $60k</option>
-          <option value="80000">$60k to $100k</option>
-          <option value="125000">$100k or more</option>
-        </select></label>
-      </div>
-      <label>What would you like done?<textarea id="message" name="message" placeholder="A few sentences about the space, what you'd change, and your timing."></textarea></label>
-      <div class="hp" aria-hidden="true"><label>Website<input id="website" name="website" tabindex="-1" autocomplete="off"></label></div>
-      <p class="err" id="err" hidden></p>
-      <button type="submit" id="btn">Request my free consultation</button>
-      <p class="fine">We only use your details to reply to this request.</p>
-    </form>
-    <div class="done" id="done" hidden>
-      <div class="check"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
-      <h2 id="thanks">Thanks, we got it.</h2>
-      <p>Your request is in. Watch your inbox for a reply with consultation times.</p>
-    </div>
-  </div>
-  <div class="foot">Powered by BuildFlow · Weblina LLC</div>
-</main>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-/* ── Edit per business (keep in sync with index.html CONFIG) ── */
-var FORM_CONFIG = {
-  companyName: "Ridgeline Renovations",
-  logoText:    "R",
-  apiUrl:      "https://buildflow.weblinallc.workers.dev/",   // same Cloudflare Worker URL as the app
-  services:    ["Kitchen Remodel","Bathroom Remodel","Basement Finish","Addition","Deck & Patio","Whole-Home Renovation"],
+//<![CDATA[
+
+/* ═══════════════════════ CONFIG — edit this block per prospect ═══════════════════════ */
+const CONFIG = {
+  companyName:  "Ridgeline Renovations",
+  companyShort: "Ridgeline",
+  logoText:     "R",
+  ownerName:    "Alex",
+  phone:        "(804) 555-0142",
+  email:        "office@ridgelinereno.com",
+  socialHandle: "ridgelinereno",
+  city:         "Richmond",
+  primaryColor: "#0B1B33",   // navy
+  accentColor:  "#C9A227",   // gold
+  aiName:       "Foreman AI",
+
+  // ── Live mode ── leave apiUrl empty for the offline demo (simulated AI, sample data only)
+  apiUrl:       "https://buildflow.weblinallc.workers.dev/",          // Cloudflare Worker URL, e.g. "https://buildflow-demo.weblinallc.workers.dev/"
+  quoteFormUrl: "",          // leave empty: uses quote.html next to this file. Only set it if the form lives somewhere else
+
+  projectTypes: ["Kitchen Remodel","Bathroom","Basement Finish","Addition","Deck & Outdoor","Full Gut"],
+  projectStatuses: ["Planning","Active","On Hold","Completed"],
+  expenseCategories: ["Labor","Materials","Subcontractors","Cabinets & Counters","Fixtures","Equipment Rental","Permits & Fees","Demo & Hauling","Miscellaneous"],
+  taskCategories: ["Pre-Construction","Demo","Rough Work","Inspections","Finish Work","Punch List","Admin"],
+  taskPriorities: ["Low","Medium","High","Urgent"],
+  taskStatuses:   ["To Do","In Progress","Blocked","Done"],
+  vendorCategories: ["Electrical","Plumbing","HVAC","Drywall","Tile & Stone","Countertops","Cabinets","Glass","Hauling","Supplier","Inspector","Other"],
+  financialFields: { contract:"Contract Value", budget:"Estimated Cost", deposit:"Deposit Received", profit:"Profit (Est.)" },
+  services: ["Kitchen Remodel","Bathroom Remodel","Basement Finish","Addition","Deck & Patio","Whole-Home Renovation"],
+  leadSources: ["Website form","Facebook","Instagram","Google","Referral"],
+  leadStages: ["New","Contacted","Estimate Sent","Won","Lost"],
 };
-(function(){
-  var C = FORM_CONFIG, $ = function(id){ return document.getElementById(id); };
-  $("companyName").textContent = C.companyName; $("logoText").textContent = C.logoText;
-  document.title = "Request a Quote · " + C.companyName;
-  C.services.forEach(function(s){ var o = document.createElement("option"); o.textContent = s; $("service").appendChild(o); });
-  var p = new URLSearchParams(location.search); var src = p.get("src") || "Website form";
-  $("f").addEventListener("submit", function(ev){
-    ev.preventDefault();
-    var err = $("err"); err.hidden = true;
-    var lead = { name:$("name").value.trim(), email:$("email").value.trim(), phone:$("phone").value.trim(), service:$("service").value,
-                 est:Number($("budget").value)||0, message:$("message").value.trim(), website:$("website").value, source:src };
-    if(!lead.name){ err.textContent = "Please add your name."; err.hidden = false; $("name").focus(); return; }
-    if(!/^\S+@\S+\.\S+$/.test(lead.email)){ err.textContent = "Please add a valid email so we can reply."; err.hidden = false; $("email").focus(); return; }
-    if(!C.apiUrl){ err.textContent = "This form isn't connected yet. Set apiUrl in FORM_CONFIG."; err.hidden = false; return; }
-    var btn = $("btn"); btn.disabled = true; btn.textContent = "Sending…";
-    fetch(C.apiUrl, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify({action:"submitLead", lead:lead}) })
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        if(d.error) throw new Error(d.error);
-        $("f").hidden = true; $("done").hidden = false;
-        $("thanks").textContent = "Thanks, " + lead.name.split(" ")[0] + ". We got it.";
-      })
-      .catch(function(e){ err.textContent = (e && e.message) ? e.message : "Something went wrong. Please try again."; err.hidden = false; btn.disabled = false; btn.textContent = "Request my free consultation"; });
+/* ══════════════════════════════════════════════════════════════════════════════════════ */
+
+const BF_LOGO = "data:image/png;base64,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";
+const { useState, useEffect, useRef } = React;
+const e = React.createElement;
+
+(function brand(){ const r=document.documentElement.style; r.setProperty("--navy",CONFIG.primaryColor); r.setProperty("--gold",CONFIG.accentColor); })();
+
+/* ── helpers ── */
+const DAY = 864e5;
+const T0 = (()=>{ const d=new Date(); d.setHours(0,0,0,0); return d; })();
+const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const dOff = n => iso(new Date(T0.getTime()+n*DAY));
+const toDate = s => new Date(s+"T00:00:00");
+const daysFrom = s => Math.round((toDate(s)-T0)/DAY);
+const fmtD = s => s ? toDate(s).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
+const fmtDay = s => toDate(s).toLocaleDateString("en-US",{weekday:"long"});
+const money = n => (n<0?"-$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US");
+let _n=0; const uid = p => (p||"x")+Date.now().toString(36)+(_n++).toString(36);
+const ago = ts => { const m=Math.round((Date.now()-ts)/60000); if(m<1) return "just now"; if(m<60) return m+" min ago"; const h=Math.round(m/60); if(h<24) return h+" hr ago"; const d=Math.round(h/24); return d===1?"yesterday":d+" days ago"; };
+const first = name => name.split(/\s|&/)[0];
+const pick = (arr,i) => arr[((i%arr.length)+arr.length)%arr.length];
+const whenLabel = s => { const n=daysFrom(s); if(n===0) return "today"; if(n===1) return "tomorrow"; if(n===-1) return "yesterday"; if(n>1 && n<7) return fmtDay(s); return fmtD(s); };
+
+const STATUS_CLS = {"To Do":"mute","In Progress":"warn","Blocked":"bad","Done":"ok"};
+const PRI_CLS = {Low:"mute",Medium:"info",High:"warn",Urgent:"bad"};
+const PROJ_CLS = {Planning:"info",Active:"ok","On Hold":"warn",Completed:"mute"};
+const PROJ_DOT = {Planning:"#6C8FE0",Active:"#6FCF97","On Hold":"#E6A85A",Completed:"#7F93B3"};
+const STAGE_CLS = {New:"gold",Contacted:"info","Estimate Sent":"warn",Won:"ok",Lost:"mute"};
+
+const ICONS = {
+  home:"M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z",
+  folder:"M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
+  users:"M16 20v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 20v-1a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
+  inbox:"M22 12h-6l-2 3h-4l-2-3H2M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z",
+  mega:"M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 8a5 5 0 0 1 0 8M19 5a9 9 0 0 1 0 14",
+  spark:"M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z",
+  plus:"M12 5v14M5 12h14", check:"M5 12l5 5 9-10", x:"M6 6l12 12M18 6L6 18",
+  send:"M22 2L11 13M22 2l-7 20-4-9-9-4z", back:"M15 18l-6-6 6-6",
+  cal:"M4 6h16v14H4zM4 10h16M8 3v4M16 3v4", flag:"M5 21V4h11l-2 4 2 4H5",
+};
+const Icon = (n,s) => e("svg",{width:s||18,height:s||18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round","aria-hidden":true},e("path",{d:ICONS[n]}));
+const Pill = (cls,txt,k) => e("span",{className:"pill "+cls,key:k},txt);
+
+/* ── live backend ── */
+const LIVE = !!CONFIG.apiUrl;
+/* Quote form: explicit URL, or quote.html in the same folder as this app */
+CONFIG.quoteFormUrl = CONFIG.quoteFormUrl || (/^https?:$/.test(location.protocol) ? new URL("quote.html", location.href).href : "");
+let PIN = "";
+async function api(action, extra){
+  let res;
+  try{ res = await fetch(CONFIG.apiUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({pin:PIN,action},extra||{}))}); }
+  catch(err){ throw new Error("Can't reach the server. Check your connection."); }
+  let data; try{ data = JSON.parse(await res.text()); }catch(err){ throw new Error("The server sent an unexpected response."); }
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+const store = { get:k=>{ try{ return localStorage.getItem(k); }catch(err){ return null; } }, set:(k,v)=>{ try{ v===null?localStorage.removeItem(k):localStorage.setItem(k,v); }catch(err){} } };
+/* AI answers come back as plain text; normalise list markers so the chat renderer can show bullets */
+const toLines = txt => String(txt||"").split(/\n+/).map(s=>s.trim()).filter(Boolean).map(s=>/^[-*]\s+/.test(s)?"• "+s.replace(/^[-*]\s+/,""):s);
+/* Shrink photos in the browser before upload so posts stay fast */
+function resizePhoto(file){
+  return new Promise((ok,fail)=>{
+    const r = new FileReader();
+    r.onerror = () => fail(new Error("Couldn't read that file."));
+    r.onload = () => { const img = new Image(); img.onerror = () => fail(new Error("That file isn't a supported image."));
+      img.onload = () => { const max=1600, s=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement("canvas"); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height); ok(c.toDataURL("image/jpeg",0.86)); };
+      img.src = r.result; };
+    r.readAsDataURL(file);
   });
-})();
+}
+
+/* ── selectors ── */
+const spent = (db,pid) => db.expenses.filter(x=>x.projectId===pid).reduce((a,x)=>a+x.amount,0);
+const pTasks = (db,pid) => db.tasks.filter(t=>t.projectId===pid);
+const isOverdue = t => t.status!=="Done" && t.due && daysFrom(t.due)<0;
+const openProjects = db => db.projects.filter(p=>p.status!=="Completed");
+const projById = (db,id) => db.projects.find(p=>p.id===id);
+const nextMilestone = (db,pid) => db.milestones.filter(m=>m.projectId===pid && !m.done).sort((a,b)=>a.date.localeCompare(b.date))[0];
+const scheduleRatio = p => { const tot=(toDate(p.end)-toDate(p.start))/DAY; const el=(T0-toDate(p.start))/DAY; return Math.max(0,Math.min(1,tot>0?el/tot:0)); };
+const needsReply = db => db.leads.filter(l=>!l.reply || l.reply.status==="draft");
+
+/* Everything Ask AI is allowed to see, in a compact form */
+function snapshot(db){
+  return {
+    today: iso(T0), company: CONFIG.companyName, owner: CONFIG.ownerName,
+    projects: db.projects.map(p=>{ const ts=pTasks(db,p.id); const cats={}; db.expenses.filter(x=>x.projectId===p.id).forEach(x=>{cats[x.category]=(cats[x.category]||0)+x.amount;});
+      return {name:p.name,neighborhood:p.area,client:p.client,type:p.type,status:p.status,contractValue:p.contract,estimatedCost:p.budget,spentToDate:spent(db,p.id),depositReceived:p.deposit,start:p.start,targetFinish:p.end,
+        spendByCategory:cats, tasksDone:ts.filter(t=>t.status==="Done").length,
+        openTasks:ts.filter(t=>t.status!=="Done").map(t=>({task:t.task,status:t.status,priority:t.priority,due:t.due,assignee:t.assignee,overdue:isOverdue(t)})),
+        milestones:db.milestones.filter(m=>m.projectId===p.id).map(m=>({title:m.title,date:m.date,done:m.done})),
+        quotes:db.quotes.filter(q=>q.projectId===p.id).map(q=>({item:q.item,vendor:q.vendor,amount:q.amount,status:q.status})),
+        recentExpenses:db.expenses.filter(x=>x.projectId===p.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(x=>({date:x.date,amount:x.amount,category:x.category,vendor:x.vendor,notes:x.notes}))}; }),
+    vendors: db.vendors.map(v=>({name:v.name,trade:v.category,phone:v.phone,email:v.email,rating:v.rating,notes:v.notes})),
+    leads: db.leads.map(l=>({name:l.name,service:l.service,source:l.source,stage:l.stage,estimatedValue:l.est,received:new Date(l.received).toISOString(),message:(l.message||"").slice(0,300),replyStatus:l.reply?l.reply.status:"none"})),
+    socialPosts: db.posts.map(p=>({platform:p.platform,type:p.style,date:p.date,status:p.status})),
+    autopilot: db.autopilot,
+  };
+}
+/* What the AI needs to write a post about one project */
+function projSummary(db,p){
+  const ts=pTasks(db,p.id), nm=nextMilestone(db,p.id);
+  return {name:p.name,neighborhood:p.area,type:p.type,status:p.status,clientFirstName:first(p.client.replace(/^The /,"")),start:p.start,targetFinish:p.end,
+    tasksDone:ts.filter(t=>t.status==="Done").length,tasksTotal:ts.length,nextMilestone:nm?nm.title:"",completedMilestones:db.milestones.filter(m=>m.projectId===p.id&&m.done).map(m=>m.title),
+    weeksIn:Math.max(1,Math.ceil((T0-toDate(p.start))/DAY/7))};
+}
+
+/* ── seed data (dates are relative to today so the demo always looks current) ── */
+function seed(){
+  const H = 3600e3, now = Date.now();
+  const projects = [
+    {id:"p1",name:"Hawthorne Kitchen Remodel",area:"Hawthorne",address:"2214 Hawthorne Ave",type:"Kitchen Remodel",status:"Active",client:"Megan & Chris Doyle",contract:68500,budget:49000,deposit:20500,start:dOff(-34),end:dOff(26)},
+    {id:"p2",name:"Linwood Primary Bath",area:"Linwood",address:"508 Linwood Rd",type:"Bathroom",status:"Active",client:"Dana Whitfield",contract:32800,budget:23500,deposit:10000,start:dOff(-15),end:dOff(19)},
+    {id:"p3",name:"Brookside Basement Finish",area:"Brookside",address:"11 Brookside Ct",type:"Basement Finish",status:"Planning",client:"The Okafor Family",contract:54200,budget:39000,deposit:15000,start:dOff(9),end:dOff(71)},
+    {id:"p4",name:"Oak Hill Deck & Porch",area:"Oak Hill",address:"3907 Oak Hill Dr",type:"Deck & Outdoor",status:"Completed",client:"Ray Castellano",contract:21400,budget:15200,deposit:21400,start:dOff(-82),end:dOff(-19)},
+  ];
+  const X = (pid,d,cat,amt,vendor,notes) => ({id:uid("e"),projectId:pid,date:dOff(d),category:cat,amount:amt,vendor,notes});
+  const expenses = [
+    X("p1",-33,"Demo & Hauling",2850,"Haul-It Dumpsters","30-yard dumpster, two pulls"),
+    X("p1",-30,"Labor",6400,"In-house crew","Demo and rough framing"),
+    X("p1",-26,"Subcontractors",4200,"Capitol Electric","Rough-in, six new circuits"),
+    X("p1",-24,"Subcontractors",3650,"Riverbend Plumbing","Relocate sink and gas line"),
+    X("p1",-20,"Permits & Fees",640,"County permit office","Building and electrical permits"),
+    X("p1",-16,"Cabinets & Counters",14800,"Cabinet & Closet Supply","Shaker cabinets, 32 boxes"),
+    X("p1",-11,"Materials",2960,"Lumber yard","Drywall, insulation, fasteners"),
+    X("p1",-6,"Labor",3450,"In-house crew","Drywall hang and finish"),
+    X("p2",-14,"Demo & Hauling",1150,"Haul-It Dumpsters","Tear-out, 15-yard"),
+    X("p2",-12,"Subcontractors",4800,"Riverbend Plumbing","Curbless shower drain and valves"),
+    X("p2",-10,"Materials",3900,"Tile Gallery","Porcelain tile and niche trim"),
+    X("p2",-8,"Labor",5200,"In-house crew","Waterproofing and tile set"),
+    X("p2",-6,"Fixtures",4350,"Plumbing showroom","Vanity, faucets, shower trim"),
+    X("p2",-4,"Subcontractors",2150,"Capitol Electric","Heated floor and exhaust fan"),
+    X("p2",-2,"Labor",2600,"In-house crew","Change order 2: reframe niche wall"),
+    X("p3",-5,"Permits & Fees",1180,"County permit office","Basement finish permit"),
+    X("p3",-3,"Materials",1240,"Lumber yard","Framing lumber deposit"),
+    X("p4",-80,"Materials",6200,"Lumber yard","Composite decking and railings"),
+    X("p4",-75,"Labor",5800,"In-house crew","Framing and decking"),
+    X("p4",-60,"Subcontractors",1900,"Capitol Electric","Low-voltage deck lighting"),
+    X("p4",-40,"Permits & Fees",300,"County permit office","Deck permit"),
+    X("p4",-25,"Miscellaneous",400,"In-house crew","Final cleanup"),
+  ];
+  const M = (id,pid,title,d,done) => ({id,projectId:pid,title,date:dOff(d),done:!!done});
+  const milestones = [
+    M("m1a","p1","Demo and rough-in",-20,1), M("m1b","p1","Cabinets installed",4), M("m1c","p1","Countertops and backsplash",14), M("m1d","p1","Final walkthrough",26),
+    M("m2a","p2","Demo and waterproofing",-6,1), M("m2b","p2","Tile complete",5), M("m2c","p2","Fixtures and glass",14), M("m2d","p2","Final walkthrough",19),
+    M("m3a","p3","Permit approved",3), M("m3b","p3","Framing and rough-in",24), M("m3c","p3","Drywall",40), M("m3d","p3","Flooring and trim",60), M("m3e","p3","Client handoff",71),
+    M("m4a","p4","Framing",-70,1), M("m4b","p4","Decking and rails",-45,1), M("m4c","p4","Final inspection",-20,1),
+  ];
+  const T = (pid,task,cat,pri,status,who,d,ms) => ({id:uid("t"),projectId:pid,task,category:cat,priority:pri,status,assignee:who,due:dOff(d),milestone:ms||""});
+  const tasks = [
+    T("p1","Order quartz countertops","Admin","High","In Progress","Alex",-2,"m1c"),
+    T("p1","Install upper cabinets","Finish Work","High","In Progress","Crew A",2,"m1b"),
+    T("p1","Install base cabinets","Finish Work","High","Done","Crew A",-3,"m1b"),
+    T("p1","Rough electrical inspection","Inspections","Urgent","Done","Capitol Electric",-18,"m1a"),
+    T("p1","Backsplash tile selection with client","Admin","Medium","Blocked","Alex",1,"m1c"),
+    T("p1","Final electrical inspection","Inspections","Medium","To Do","Capitol Electric",20,"m1d"),
+    T("p1","Punch list walkthrough","Punch List","Low","To Do","Alex",24,"m1d"),
+    T("p2","Flood test shower pan","Inspections","High","Done","Crew B",-5,"m2a"),
+    T("p2","Set floor tile","Finish Work","High","In Progress","Crew B",1,"m2b"),
+    T("p2","Grout and seal","Finish Work","Medium","To Do","Crew B",4,"m2b"),
+    T("p2","Measure for glass enclosure","Admin","Medium","To Do","Alex",-1,"m2c"),
+    T("p2","Send change order 2 for signature","Admin","Urgent","To Do","Alex",0,""),
+    T("p2","Install vanity and fixtures","Finish Work","Medium","To Do","Riverbend Plumbing",10,"m2c"),
+    T("p3","Finalize basement layout with the Okafors","Pre-Construction","High","In Progress","Alex",2,"m3a"),
+    T("p3","Choose drywall sub (3 quotes in)","Pre-Construction","Medium","To Do","Alex",5,"m3c"),
+    T("p3","Schedule egress window cut","Rough Work","Medium","To Do","Crew A",12,"m3b"),
+    T("p4","Final inspection","Inspections","High","Done","Alex",-20,"m4c"),
+    T("p4","Collect final payment","Admin","High","Done","Alex",-18,""),
+  ];
+  const Q = (pid,item,vendor,amount,status) => ({id:uid("q"),projectId:pid,item,vendor,amount,status});
+  const quotes = [
+    Q("p1","Quartz countertops (42 sq ft)","Stone Masters",6850,"Pending"),
+    Q("p1","Quartz countertops (42 sq ft)","Granite Plus",7420,"Pending"),
+    Q("p1","Quartz countertops (42 sq ft)","Countertop Co.",6190,"Pending"),
+    Q("p2","Frameless glass enclosure","Clear View Glass",2150,"Accepted"),
+    Q("p2","Frameless glass enclosure","Shower Door Pros",2480,"Rejected"),
+    Q("p3","Drywall hang and finish","Precision Drywall",8900,"Pending"),
+    Q("p3","Drywall hang and finish","JM Interiors",9650,"Pending"),
+    Q("p3","Drywall hang and finish","Allied Wall Systems",8400,"Pending"),
+  ];
+  const V = (name,category,phone,email,rating,notes) => ({id:uid("v"),name,category,phone,email,rating,notes});
+  const vendors = [
+    V("Capitol Electric","Electrical","(804) 555-0118","jobs@capitolelectric.co",5.0,"Licensed master electrician. Pulls permits same week."),
+    V("Riverbend Plumbing","Plumbing","(804) 555-0177","service@riverbendplumb.co",4.8,"Great with curbless showers. Book two weeks out."),
+    V("Comfort Air HVAC","HVAC","(804) 555-0193","office@comfortairhvac.co",4.6,"Duct work for basements and additions."),
+    V("Precision Drywall","Drywall","(804) 555-0124","bids@precisiondrywall.co",4.7,"Level 5 finish available."),
+    V("Tile Gallery","Tile & Stone","(804) 555-0150","trade@tilegallery.co",4.9,"Trade account, 15% contractor discount."),
+    V("Stone Masters","Countertops","(804) 555-0166","quotes@stonemasters.co",4.5,"Templating to install in about 10 business days."),
+    V("Clear View Glass","Glass","(804) 555-0109","install@clearviewglass.co",4.8,"Frameless enclosures and mirrors."),
+    V("Cabinet & Closet Supply","Cabinets","(804) 555-0131","sales@cabinetcloset.co",4.9,"Shaker and slab lines in stock."),
+    V("Haul-It Dumpsters","Hauling","(804) 555-0185","dispatch@haulit.co",4.4,"15 and 30-yard roll-offs, next-day drop."),
+  ];
+  const L = (name,service,source,hrs,stage,est,phone,email,message,reply) => ({id:uid("l"),name,service,source,received:now-hrs*H,stage,est,phone,email,message,reply:reply||null});
+  const leads = [
+    L("Ashley Romero","Bathroom Remodel","Website form",0.2,"New",26000,"(804) 555-0311","ashley.romero@example.com","Hi! Our hall bathroom still has the original pink tile from 1972. Looking to gut it and make it more modern, maybe a walk-in shower. Do you do free estimates?"),
+    L("Jessica Moreno","Kitchen Remodel","Website form",0.5,"New",65000,"(804) 555-0297","jmoreno@example.com","We bought a 1980s colonial and the kitchen is original. Looking to open the wall to the dining room and do new cabinets and counters. Budget is around $60-70k. When could you come take a look?",null),
+    L("Marcus Bell","Bathroom Remodel","Facebook",3,"Contacted",22000,"(804) 555-0244","marcus.bell@example.com","Saw your bathroom post on Facebook. We want something similar for our primary bath. How soon could you start?",{status:"sent",auto:true,at:now-2.98*H,text:""}),
+    L("Priya Shah","Basement Finish","Google",26,"Estimate Sent",48000,"(804) 555-0262","priya.shah@example.com","Looking to finish about 900 sq ft of basement with a bedroom, full bath, and a media area.",{status:"sent",auto:true,at:now-25.9*H,text:""}),
+    L("Tom & Linda Greer","Addition","Referral",50,"Contacted",120000,"(804) 555-0219","greers@example.com","Our neighbors the Castellanos recommended you. We'd like to add a primary suite over the garage.",{status:"sent",auto:false,at:now-48*H,text:""}),
+    L("Kevin Huang","Deck & Patio","Instagram",98,"Won",18500,"(804) 555-0283","khuang@example.com","Love the composite deck you posted. We need a new deck, around 16x20, with lighting.",{status:"sent",auto:true,at:now-97.9*H,text:""}),
+  ];
+  leads.forEach((l,i)=>{ if(l.reply && !l.reply.text) l.reply.text = genReply(l,i); });
+  leads[1].reply = {status:"draft",text:genReply(leads[1],0)};
+  const P = (pid,platform,style,d,status) => { const p=projects.find(x=>x.id===pid); return {id:uid("s"),projectId:pid,platform,style,date:dOff(d),time:"10:00",status,sample:true,caption:genPost(p,platform,style,0,{tasks,milestones})}; };
+  const posts = [
+    P("p4","Instagram","Before & After",-16,"Posted"),
+    P("p1","Facebook","Progress Update",-3,"Posted"),
+    P("p2","Instagram","Progress Update",1,"Scheduled"),
+    P("p3","Facebook","Tip of the Week",3,"Scheduled"),
+  ];
+  return {v:2,day:iso(T0),autopilot:false,projects,expenses,milestones,tasks,quotes,vendors,leads,posts};
+}
+
+/* ── "AI" writers (simulated for the demo; the live product connects to a real model) ── */
+const SERVICE_LINE = {
+  "Kitchen Remodel":"Opening up a kitchen is one of our favorite projects. During the visit we'll check whether that wall is load-bearing, so you'll know your options right away.",
+  "Bathroom Remodel":"We handle the whole bathroom, from demo and waterproofing to tile and fixtures, with one point of contact the entire way.",
+  "Basement Finish":"Basements are a great way to add living space. We'll check moisture, ceiling height, and egress during the visit so there are no surprises later.",
+  "Addition":"Additions take some planning for design and permits, and we'll walk you through the full timeline on our first visit.",
+  "Deck & Patio":"We build with both composite and pressure-treated lumber, and we'll bring samples of each so you can compare.",
+  "Whole-Home Renovation":"For a project this size we start with a walkthrough, then put together a phased plan and budget you can review.",
+};
+const OPENERS = [
+  (l,s)=>`Thanks for reaching out to ${CONFIG.companyName} about your ${s}.`,
+  (l,s)=>`Thank you for contacting us about your ${s}. It sounds like a great project.`,
+  (l,s)=>`Great to hear from you, and thanks for considering ${CONFIG.companyName} for your ${s}.`,
+];
+const CLOSERS = ["Would either of those work for you?","Let me know which works best, or suggest another time that suits you.","Just reply with what works and I'll put it on the calendar."];
+function nextSlots(){
+  const out=[]; let d=2;
+  while(out.length<2){ const dt=new Date(T0.getTime()+d*DAY); const wd=dt.getDay(); if(wd>0 && wd<6) out.push(dt.toLocaleDateString("en-US",{weekday:"long"})+", "+dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})); d++; }
+  return out[0]+" at 10 AM or "+out[1]+" at 2 PM";
+}
+function genReply(lead,variant){
+  const svc = lead.service.toLowerCase();
+  const msg = (lead.message||"").toLowerCase();
+  const extra = [];
+  if(/budget|\$\d|\dk\b/.test(msg)) extra.push("Thanks for sharing your budget range. It helps us show you options that make the most of it.");
+  if(/asap|soon|how soon|quick|start/.test(msg)) extra.push("Right now we can typically begin within three to four weeks of signing.");
+  if(/free estimate|estimate|quote/.test(msg)) extra.push("Estimates are always free, and you'll get a written, itemized proposal after the visit.");
+  return `Hi ${first(lead.name)},\n\n${pick(OPENERS,variant)(lead,svc)} ${SERVICE_LINE[lead.service]||""}${extra.length?" "+extra.join(" "):""}\n\nThe next step is a free on-site consultation, about 45 minutes, where we measure, talk through your goals, and go over budget ranges. I have openings ${nextSlots()}. ${pick(CLOSERS,variant)}\n\nBest,\n${CONFIG.ownerName}\n${CONFIG.companyName}\n${CONFIG.phone}`;
+}
+
+const TYPE_INFO = {
+  "Kitchen Remodel":{tag:"KitchenRemodel",hl:["the wall to the dining room came down, shaker cabinets went in, and quartz counters tie it all together","an open layout, soft-close cabinets, and an island built for family dinners","new cabinets, under-cabinet lighting, and a layout that finally makes sense"],tips:["Plan your outlets before the cabinets go in. Adding one later means cutting into a brand-new backsplash.","Order countertops early. Fabrication usually takes two to three weeks after templating.","Under-cabinet lighting costs very little during a remodel and a lot more after it."]},
+  "Bathroom":{tag:"BathroomRemodel",hl:["a curbless shower, heated floors, and a floating vanity","floor-to-ceiling porcelain tile and a frameless glass enclosure","a dated tub swapped for a walk-in shower with a built-in niche"],tips:["Ask any contractor how they waterproof the shower. It matters more than the tile you pick.","A heated floor adds about a day to the schedule and is the upgrade our clients mention most.","Put the shower niche on a wall you can't see from the doorway."]},
+  "Basement Finish":{tag:"BasementFinish",hl:["a new media room, guest bedroom, and full bath","900 square feet of new living space with a wet bar","a bright family room with egress windows and a full bath"],tips:["Test for moisture before you frame. A dry basement in July can be a damp one in March.","Egress windows are required for any basement bedroom, and they bring in a surprising amount of light.","Use rigid foam against the foundation walls. It handles moisture far better than fiberglass alone."]},
+  "Deck & Outdoor":{tag:"DeckBuilder",hl:["low-maintenance composite decking, a covered porch, and built-in lighting","a two-level deck with stairs to the yard and lighting for summer evenings","a screened porch and a composite deck that will never need staining"],tips:["Composite decking costs more up front and saves years of staining and sealing.","Low-voltage deck lighting is easiest to add during the build, not after.","Most counties require a permit for a deck attached to the house. We handle that for you."]},
+  "Addition":{tag:"HomeAddition",hl:["a new primary suite with a walk-in closet","a sunroom that blends right into the original house","a two-story addition with a mudroom and home office"],tips:["Match the roof pitch and siding to the original house and the addition will look like it was always there.","Plan HVAC early. Many existing systems can't carry an addition without an upgrade.","Expect four to eight weeks for design and permits before any digging starts."]},
+  "Full Gut":{tag:"WholeHomeRemodel",hl:["new walls, wiring, plumbing, and finishes throughout","an open plan, new windows, and all-new systems","a complete renovation from studs to trim"],tips:["Do every behind-the-walls upgrade while the walls are open. It never gets cheaper.","Budget a 10 to 15 percent contingency for what you find once demo starts.","Live elsewhere if you can. A gut renovation goes faster in an empty house."]},
+};
+const OFFERS = ["a free 3D design rendering of your new space","$500 off any project over $20,000","free design consultation and material samples delivered to your door"];
+function genPost(p,platform,style,variant,db){
+  const info = TYPE_INFO[p.type] || TYPE_INFO["Full Gut"];
+  const type = p.type.toLowerCase();
+  const ig = platform==="Instagram";
+  const tags = ["#"+CONFIG.city.replace(/\W/g,"")+"Remodeling","#"+info.tag,"#HomeRenovation","#"+CONFIG.city.replace(/\W/g,""),"#BeforeAndAfter","#Contractor","#HomeDesign","#LocalBusiness"];
+  let body = "";
+  if(style==="Before & After"){
+    body = [
+      `Before and after in ${p.area}. Our team just wrapped this ${type}: ${pick(info.hl,variant)}.\n\nThank you to ${first(p.client.replace(/^The /,""))} for trusting us with your home.`,
+      `Same room, new life. This ${p.area} ${type} came together with ${pick(info.hl,variant)}.\n\nSwipe to see where it started.`,
+      `We love a good transformation. Here's the ${p.area} ${type}: ${pick(info.hl,variant)}.\n\nThe homeowners say it's their favorite room in the house now.`,
+    ][variant%3];
+  } else if(style==="Progress Update"){
+    const ts = db.tasks.filter(t=>t.projectId===p.id), done = ts.filter(t=>t.status==="Done").length;
+    const nm = db.milestones.filter(m=>m.projectId===p.id && !m.done).sort((a,b)=>a.date.localeCompare(b.date))[0];
+    const wk = Math.max(1,Math.ceil((T0-toDate(p.start))/DAY/7));
+    body = [
+      `Week ${wk} on the ${p.area} ${type}. ${done} of ${ts.length} tasks are complete${nm?", and next up is "+nm.title.toLowerCase():""}.\n\nOur clients get a progress update like this every Friday, so nobody is left guessing.`,
+      `Progress check in ${p.area}! The ${type} is moving right along${nm?", with "+nm.title.toLowerCase()+" coming up next":""}.\n\nFollow along to see the finished space.`,
+      `Behind the scenes on the ${p.area} ${type}. This is the stage where careful prep pays off later.${nm?" Next milestone: "+nm.title.toLowerCase()+".":""}`,
+    ][variant%3];
+  } else if(style==="Tip of the Week"){
+    body = `Tip of the week: ${pick(info.tips,variant)}\n\nHave a question about your own project? Send us a message.`;
+  } else {
+    body = `Now booking ${type} projects in ${CONFIG.city}. Schedule a design consultation this month and get ${pick(OFFERS,variant)}.\n\nSpots are limited. Call ${CONFIG.phone} or message us here.`;
+  }
+  return body + "\n\n" + (ig ? tags.join(" ") : tags.slice(0,2).join(" "));
+}
+
+/* ── Ask Foreman: answers from the app's own data ── */
+function answer(db,q){
+  const s = q.toLowerCase();
+  const has = (...w) => w.some(x=>s.includes(x));
+  const open = openProjects(db);
+  const L = [];
+  const vendorMap = {plumb:"Plumbing",electric:"Electrical",hvac:"HVAC","heat":"HVAC",drywall:"Drywall",tile:"Tile & Stone",counter:"Countertops",cabinet:"Cabinets",glass:"Glass",dumpster:"Hauling",haul:"Hauling"};
+  const vKey = Object.keys(vendorMap).find(k=>s.includes(k));
+  if(vKey && has("who","vendor","sub","call","number","phone","contact","need","find")){
+    const cat = vendorMap[vKey];
+    const vs = db.vendors.filter(v=>v.category===cat).sort((a,b)=>b.rating-a.rating);
+    if(!vs.length) return [`You don't have a ${cat.toLowerCase()} vendor saved yet. Add one under Vendors and I'll include them next time.`];
+    L.push(`Your top ${cat.toLowerCase()} contact:`);
+    vs.forEach(v=>L.push(`• **${v.name}**, ${v.phone}, rated ${v.rating.toFixed(1)}. ${v.notes}`));
+    return L;
+  }
+  if(has("budget","over","spend","spent","cost","money","profit","margin")){
+    L.push("Here's where each open project stands against its budget:");
+    open.forEach(p=>{ const sp=spent(db,p.id), pct=Math.round(sp/p.budget*100); L.push(`• **${p.name}**: ${money(sp)} of ${money(p.budget)} (${pct}%)${sp>p.budget?", **over by "+money(sp-p.budget)+"**":""}. Projected profit ${money(p.contract-Math.max(p.budget,sp))}.`); });
+    const ob = open.filter(p=>spent(db,p.id)>p.budget);
+    L.push(ob.length ? `${ob[0].name} is the one to watch. Consider a change order for the extra work before more costs land.` : "Everything is inside budget right now.");
+    return L;
+  }
+  if(has("overdue","late","behind","task","to do","todo","this week","due")){
+    const od = db.tasks.filter(isOverdue);
+    const wk = db.tasks.filter(t=>t.status!=="Done" && t.due && daysFrom(t.due)>=0 && daysFrom(t.due)<=7).sort((a,b)=>a.due.localeCompare(b.due));
+    L.push(od.length ? `You have **${od.length} overdue task${od.length>1?"s":""}**:` : "Nothing is overdue. Nice work.");
+    od.forEach(t=>L.push(`• ${t.task} (${projById(db,t.projectId).name}), due ${fmtD(t.due)}, assigned to ${t.assignee}`));
+    if(wk.length){ L.push(`Coming up in the next 7 days:`); wk.slice(0,6).forEach(t=>L.push(`• ${t.task}, ${whenLabel(t.due)} (${projById(db,t.projectId).area})`)); }
+    return L;
+  }
+  if(has("lead","inquir","customer","pipeline","new business","sales")){
+    const nr = needsReply(db);
+    const pipe = db.leads.filter(l=>l.stage!=="Won" && l.stage!=="Lost");
+    L.push(`You have **${db.leads.length} leads**, with ${money(pipe.reduce((a,l)=>a+l.est,0))} in open pipeline value.`);
+    if(nr.length){ L.push(`${nr.length} still need a reply from you:`); nr.forEach(l=>L.push(`• **${l.name}**, ${l.service}, ${ago(l.received)}${l.reply&&l.reply.status==="draft"?" (my draft is ready for your approval)":""}`)); }
+    const est = db.leads.filter(l=>l.stage==="Estimate Sent");
+    if(est.length) L.push(`Follow up on the estimate${est.length>1?"s":""} sent to ${est.map(l=>l.name).join(", ")}.`);
+    return L;
+  }
+  if(has("milestone","schedule","next","when","finish","done by","timeline","calendar")){
+    L.push("Next milestone on each open project:");
+    open.forEach(p=>{ const m=nextMilestone(db,p.id); L.push(`• **${p.name}**: ${m? m.title+", "+whenLabel(m.date) : "all milestones complete"}. Project wraps ${fmtD(p.end)}.`); });
+    return L;
+  }
+  if(has("quote","bid")){
+    const groups = {};
+    db.quotes.filter(x=>x.status==="Pending").forEach(x=>{ (groups[x.item] = groups[x.item]||[]).push(x); });
+    const keys = Object.keys(groups);
+    if(!keys.length) return ["There are no open quotes right now."];
+    L.push("Open quotes waiting on a decision:");
+    keys.forEach(k=>{ const g=groups[k].sort((a,b)=>a.amount-b.amount); L.push(`• **${k}**: ${g.length} bids from ${money(g[0].amount)} (${g[0].vendor}) to ${money(g[g.length-1].amount)}`); });
+    return L;
+  }
+  if(has("post","social","facebook","instagram","marketing")){
+    const sch = db.posts.filter(p=>p.status==="Scheduled");
+    L.push(`${sch.length} post${sch.length===1?" is":"s are"} scheduled:`);
+    sch.forEach(p=>L.push(`• ${p.platform}, ${p.style.toLowerCase()} for ${projById(db,p.projectId).area}, ${whenLabel(p.date)}`));
+    L.push("Open Social Posts and I'll write the next one from any project's photos and progress.");
+    return L;
+  }
+  if(has("email","reply","write","draft","text")){
+    return ["I can draft replies to customers and leads. Open **Leads** and press Write reply, or turn on Autopilot and I'll answer new inquiries within a minute.", "For updates to existing clients, ask me for a status summary of a project and I'll write it in plain language you can send."];
+  }
+  const proj = db.projects.find(p=>s.includes(p.area.toLowerCase()) || s.includes(p.client.toLowerCase().split(" ")[0]));
+  if(proj){
+    const sp=spent(db,proj.id), ts=pTasks(db,proj.id), done=ts.filter(t=>t.status==="Done").length, m=nextMilestone(db,proj.id), od=ts.filter(isOverdue);
+    L.push(`**${proj.name}** for ${proj.client} is ${proj.status.toLowerCase()}.`);
+    L.push(`• Budget: ${money(sp)} spent of ${money(proj.budget)} (${Math.round(sp/proj.budget*100)}%)`);
+    L.push(`• Tasks: ${done} of ${ts.length} done${od.length?", "+od.length+" overdue":""}`);
+    L.push(`• Next milestone: ${m? m.title+", "+whenLabel(m.date) : "none, all complete"}`);
+    L.push(`• Projected profit: ${money(proj.contract-Math.max(proj.budget,sp))}`);
+    return L;
+  }
+  return brief(db).map(b=>"• "+b.text.replace(/<\/?b>/g,"**")).concat(["Try asking about budgets, overdue tasks, leads, quotes, or a project by name, like \"How is Hawthorne going?\""]).reduce((a,x,i)=>i===0?["Here's today's rundown:",x]:a.concat([x]),[]);
+}
+
+function brief(db){
+  const out = [];
+  const od = db.tasks.filter(isOverdue);
+  if(od.length) out.push({tone:"bad",text:`<b>${od.length} overdue task${od.length>1?"s":""}</b>, including "${od[0].task}" on ${projById(db,od[0].projectId).area}.`,go:["project",od[0].projectId,"tasks"],cta:"View tasks"});
+  openProjects(db).forEach(p=>{ const sp=spent(db,p.id); if(sp>p.budget) out.push({tone:"bad",text:`<b>${p.name}</b> is ${money(sp-p.budget)} over its estimated cost.`,go:["project",p.id,"dashboard"],cta:"See budget"}); });
+  const nr = needsReply(db);
+  if(nr.length) out.push({tone:"gold",text:`<b>${nr.length} new lead${nr.length>1?"s":""}</b> waiting on a reply. I've drafted responses for you to approve.`,go:["leads"],cta:"Review"});
+  const pq = db.quotes.filter(q=>q.status==="Pending");
+  if(pq.length){ const it = pq[0]; out.push({tone:"gold",text:`<b>${pq.length} bids</b> are waiting on a decision, starting with ${it.item.toLowerCase()} for ${projById(db,it.projectId).area}.`,go:["project",it.projectId,"quotes"],cta:"Compare"}); }
+  const sch = db.posts.filter(p=>p.status==="Scheduled").sort((a,b)=>a.date.localeCompare(b.date))[0];
+  if(sch) out.push({tone:"ok",text:`Next social post goes out <b>${whenLabel(sch.date)}</b> on ${sch.platform}.`,go:["social"],cta:"Open"});
+  return out.slice(0,5);
+}
+const richHTML = s => ({__html: s});
+const rich = s => s.split("**").map((part,i)=> i%2 ? e("b",{key:i},part) : part);
+
+/* ── storage (demo resets each day so dates stay realistic) ── */
+const KEY = "buildflow-demo";
+function loadDb(){ try{ const raw=localStorage.getItem(KEY); if(!raw) return null; const d=JSON.parse(raw); if(d.v!==2 || d.day!==iso(T0)) return null; return d; }catch(err){ return null; } }
+function saveDb(d){ try{ localStorage.setItem(KEY,JSON.stringify(d)); }catch(err){} }
+
+/* ═══════════════════════ shared UI ═══════════════════════ */
+function Modal({title,onClose,children}){
+  useEffect(()=>{ const h=ev=>{ if(ev.key==="Escape") onClose(); }; window.addEventListener("keydown",h); return ()=>window.removeEventListener("keydown",h); },[]);
+  return e("div",{className:"mbg",onMouseDown:onClose},
+    e("div",{className:"modal",role:"dialog","aria-modal":true,"aria-label":title,onMouseDown:ev=>ev.stopPropagation()},
+      e("div",{className:"modal-h"}, e("h2",{className:"t"},title), e("button",{className:"x",onClick:onClose,"aria-label":"Close"},Icon("x"))),
+      children));
+}
+const Field = (label,input,full) => e("label",{className:"f"+(full?" full":"")},label,input);
+const Sel = (id,val,set,opts) => e("select",{id,value:val,onChange:ev=>set(ev.target.value)}, opts.map(o=> typeof o==="string" ? e("option",{key:o,value:o},o) : e("option",{key:o.v,value:o.v},o.l)));
+const Inp = (id,val,set,type,ph) => e("input",{id,type:type||"text",value:val,placeholder:ph||"",onChange:ev=>set(ev.target.value)});
+
+/* ═══════════════════════ HOME ═══════════════════════ */
+function Home({ctx}){
+  const {db,go} = ctx;
+  const hr = new Date().getHours();
+  const greet = hr<12?"Good morning":hr<17?"Good afternoon":"Good evening";
+  const act = db.projects.filter(p=>p.status==="Active");
+  const open = openProjects(db);
+  const pipe = act.reduce((a,p)=>a+p.contract,0);
+  const sp = open.reduce((a,p)=>a+spent(db,p.id),0), bud = open.reduce((a,p)=>a+p.budget,0);
+  const openT = db.tasks.filter(t=>t.status!=="Done"), od = db.tasks.filter(isOverdue);
+  const newL = db.leads.filter(l=>l.stage==="New").length;
+  const items = brief(db);
+  const upcoming = db.milestones.filter(m=>!m.done && daysFrom(m.date)>=0).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
+  const feed = [];
+  db.leads.forEach(l=>{ if(l.reply && l.reply.status==="sent") feed.push({ts:l.reply.at,ic:"inbox",t:(l.reply.auto?"Replied automatically to ":"Sent your approved reply to ")+l.name,m:l.service}); });
+  db.posts.forEach(p=>{ const pr=projById(db,p.projectId); feed.push({ts:toDate(p.date).getTime()+10*3600e3,ic:"mega",t:(p.status==="Posted"?"Posted to ":"Scheduled for ")+p.platform,m:p.style+", "+(pr?pr.area:"")}); });
+  feed.sort((a,b)=>b.ts-a.ts);
+  return e("div",{className:"wrap"},
+    e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow"},new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})), e("h1",{className:"t"},greet+", "+CONFIG.ownerName)),
+      e("div",{className:"row"}, e("button",{className:"btn ghost",onClick:()=>go("projects")},Icon("folder",16),"All projects"), e("button",{className:"btn",onClick:()=>go("ask")},Icon("spark",16),"Ask "+CONFIG.aiName.split(" ")[0]))),
+    e("div",{className:"grid g-split",style:{marginBottom:16}},
+      e("div",{className:"aibox"},
+        e("div",{className:"ai-tag"},Icon("spark",14),CONFIG.aiName+" · Daily brief"),
+        e("h2",{className:"t"},items.length?"Here's what needs you today":"You're all caught up"),
+        e("ul",null, items.map((b,i)=> e("li",{key:i}, e("span",{className:"mk "+b.tone}), e("span",null, e("span",{dangerouslySetInnerHTML:richHTML(b.text)}), " ", e("button",{className:"lnk",onClick:()=>go(...b.go)},b.cta+" →")))))),
+      e("div",{className:"grid",style:{gridTemplateColumns:"repeat(2,minmax(0,1fr))"}},
+        e("div",{className:"card kpi"}, e("div",{className:"l"},"Active jobs"), e("div",{className:"v"},act.length), e("div",{className:"n"},money(pipe)+" under contract")),
+        e("div",{className:"card kpi"}, e("div",{className:"l"},"Budget used"), e("div",{className:"v"},Math.round(sp/bud*100)+"%"), e("div",{className:"n"},money(sp)+" of "+money(bud))),
+        e("div",{className:"card kpi"}, e("div",{className:"l"},"Open tasks"), e("div",{className:"v"},openT.length), e("div",{className:"n"+(od.length?" bad":"")},od.length? od.length+" overdue" : "None overdue")),
+        e("div",{className:"card kpi"}, e("div",{className:"l"},"New leads"), e("div",{className:"v"},newL), e("div",{className:"n"},needsReply(db).length+" need a reply")))),
+    e("div",{className:"grid g-split"},
+      e("div",{className:"stack"},
+        e("div",{className:"card-h",style:{margin:"6px 0 -4px"}}, e("h2",{className:"t"},"Projects"), e("button",{className:"lnk",onClick:()=>go("projects")},"See all")),
+        e("div",{className:"grid g-proj"}, open.map(p=>e(ProjectCard,{key:p.id,p,db,go})))),
+      e("div",{className:"stack"},
+        e("div",{className:"card"}, e("div",{className:"card-h"},e("h2",{className:"t"},"Upcoming milestones")),
+          upcoming.length? upcoming.map(m=>{ const p=projById(db,m.projectId); return e("div",{className:"lrow",key:m.id}, e("div",{className:"grow"}, e("div",{className:"tt"},m.title), e("div",{className:"mt"},p.name)), Pill(daysFrom(m.date)<=3?"gold":"mute",whenLabel(m.date))); }) : e("div",{className:"empty"},"No upcoming milestones")),
+        e("div",{className:"card"}, e("div",{className:"card-h"},e("h2",{className:"t"},"AI activity"),e("span",{className:"pill gold"},Icon("spark",12),"Automated")),
+          e("div",{className:"feed"}, feed.slice(0,5).map((f,i)=>e("div",{className:"lrow",key:i}, e("div",{className:"ic"},Icon(f.ic,16)), e("div",{className:"grow"}, e("div",{className:"tt",style:{fontWeight:500}},f.t), e("div",{className:"mt"},f.m+" · "+(f.ts>Date.now()?"upcoming":ago(f.ts))))))))))
+  );
+}
+
+function ProjectCard({p,db,go}){
+  const sp=spent(db,p.id), pct=Math.min(100,Math.round(sp/p.budget*100)), over=sp>p.budget;
+  const ts=pTasks(db,p.id), done=ts.filter(t=>t.status==="Done").length;
+  const nm=nextMilestone(db,p.id);
+  return e("button",{className:"card pcard",onClick:()=>go("project",p.id,"dashboard")},
+    e("div",{className:"row",style:{justifyContent:"space-between"}}, Pill(PROJ_CLS[p.status],p.status), e("span",{className:"meta"},p.type)),
+    e("div",null, e("div",{className:"nm"},p.name), e("div",{className:"meta"},p.client+" · "+p.address)),
+    e("div",null, e("div",{className:"fig",style:{marginBottom:6}}, e("span",null,"Budget"), e("span",null,e("b",{className:over?"over":""},money(sp))," / "+money(p.budget))), e("div",{className:"bar"},e("i",{className:over?"bad":"",style:{width:pct+"%"}}))),
+    e("div",{className:"fig"}, e("span",null,e("b",null,done+"/"+ts.length)," tasks done"), e("span",null, nm? "Next: "+nm.title.split(" ").slice(0,3).join(" ")+" · "+fmtD(nm.date) : "Complete")));
+}
+
+/* ═══════════════════════ PROJECTS LIST ═══════════════════════ */
+function Projects({ctx}){
+  const {db,go,up,notify} = ctx;
+  const [f,setF] = useState("All");
+  const [adding,setAdding] = useState(false);
+  const list = db.projects.filter(p=>f==="All"||p.status===f);
+  return e("div",{className:"wrap"},
+    e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow"},db.projects.length+" projects"), e("h1",{className:"t"},"Projects")),
+      e("div",{className:"row"}, e("button",{className:"btn ghost mobile-only",onClick:()=>go("vendors")},Icon("users",16),"Vendors"), e("button",{className:"btn",onClick:()=>setAdding(true)},Icon("plus",16),"New project"))),
+    e("div",{className:"chips",style:{marginBottom:16}}, ["All"].concat(CONFIG.projectStatuses).map(s=>e("button",{key:s,className:"chip"+(f===s?" on":""),onClick:()=>setF(s)},s))),
+    list.length? e("div",{className:"grid g-proj"}, list.map(p=>e(ProjectCard,{key:p.id,p,db,go}))) : e("div",{className:"empty"},"No "+f.toLowerCase()+" projects"),
+    adding && e(ProjectForm,{onClose:()=>setAdding(false),onSave:p=>{ up("projects",ps=>ps.concat([p])); setAdding(false); notify("Project created"); go("project",p.id,"dashboard"); }}));
+}
+function ProjectForm({onClose,onSave}){
+  const [name,setName]=useState(""), [client,setClient]=useState(""), [address,setAddress]=useState(""), [type,setType]=useState(CONFIG.projectTypes[0]);
+  const [contract,setContract]=useState(""), [budget,setBudget]=useState(""), [deposit,setDeposit]=useState(""), [start,setStart]=useState(dOff(7)), [end,setEnd]=useState(dOff(60));
+  const ok = name.trim() && Number(contract)>0 && Number(budget)>0;
+  return e(Modal,{title:"New project",onClose},
+    e("div",{className:"form"},
+      Field("Project name",Inp("np-name",name,setName,"text","e.g. Maple St Kitchen"),true),
+      Field("Client",Inp("np-client",client,setClient)), Field("Type",Sel("np-type",type,setType,CONFIG.projectTypes)),
+      Field("Address",Inp("np-addr",address,setAddress),true),
+      Field(CONFIG.financialFields.contract,Inp("np-contract",contract,setContract,"number")), Field(CONFIG.financialFields.budget,Inp("np-budget",budget,setBudget,"number")),
+      Field(CONFIG.financialFields.deposit,Inp("np-dep",deposit,setDeposit,"number")), e("div"),
+      Field("Start",Inp("np-start",start,setStart,"date")), Field("Target finish",Inp("np-end",end,setEnd,"date"))),
+    e("div",{className:"actions"}, e("button",{className:"btn ghost",onClick:onClose},"Cancel"),
+      e("button",{className:"btn",disabled:!ok,onClick:()=>onSave({id:uid("p"),name:name.trim(),area:name.trim().split(" ")[0],client:client||"New client",address,type,status:"Planning",contract:+contract,budget:+budget,deposit:+deposit||0,start,end})},"Create project")));
+}
+
+/* ═══════════════════════ PROJECT DETAIL ═══════════════════════ */
+function ProjectView({ctx}){
+  const {db,pid,ptab,setPtab,go,up} = ctx;
+  const p = projById(db,pid);
+  if(!p) return e("div",{className:"wrap"},e("div",{className:"empty"},"Project not found"));
+  const tabs = [["dashboard","Dashboard"],["tasks","Tasks"],["expenses","Expenses"],["planning","Planning"],["quotes","Quotes"]];
+  return e("div",{className:"wrap"},
+    e("button",{className:"lnk",style:{display:"inline-flex",alignItems:"center",gap:4,marginBottom:10,color:"var(--muted)"},onClick:()=>go("projects")},Icon("back",15),"Projects"),
+    e("div",{className:"ph"}, e("div",{className:"ph-t"},
+        e("div",{className:"eyebrow"},p.type, Pill(PROJ_CLS[p.status],p.status)),
+        e("h1",{className:"t"},p.name), e("div",{className:"sub"},p.client+" · "+p.address+" · "+fmtD(p.start)+" to "+fmtD(p.end))),
+      e("select",{id:"proj-status",value:p.status,style:{width:"auto"},"aria-label":"Project status",onChange:ev=>{ const v=ev.target.value; up("projects",ps=>ps.map(x=>x.id===p.id?{...x,status:v}:x)); }}, CONFIG.projectStatuses.map(s=>e("option",{key:s},s)))),
+    e("div",{className:"tabs",role:"tablist"}, tabs.map(([k,l])=>e("button",{key:k,role:"tab","aria-selected":ptab===k,className:"tab"+(ptab===k?" on":""),onClick:()=>setPtab(k)},l, k==="tasks"? " ("+pTasks(db,p.id).filter(t=>t.status!=="Done").length+")" : k==="quotes" && db.quotes.some(q=>q.projectId===p.id&&q.status==="Pending") ? " ●" : ""))),
+    ptab==="dashboard" ? e(Dashboard,{ctx,p}) :
+    ptab==="tasks" ? e(Tasks,{ctx,p}) :
+    ptab==="expenses" ? e(Expenses,{ctx,p}) :
+    ptab==="planning" ? e(Planning,{ctx,p}) :
+    e(Quotes,{ctx,p}));
+}
+
+function Dashboard({ctx,p}){
+  const {db,setPtab} = ctx;
+  const sp=spent(db,p.id), over=sp>p.budget, profit=p.contract-Math.max(p.budget,sp);
+  const ts=pTasks(db,p.id), done=ts.filter(t=>t.status==="Done").length, od=ts.filter(isOverdue);
+  const byCat={}; db.expenses.filter(x=>x.projectId===p.id).forEach(x=>{ byCat[x.category]=(byCat[x.category]||0)+x.amount; });
+  const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]); const maxC=cats.length?cats[0][1]:1;
+  const sr=scheduleRatio(p), br=sp/p.budget;
+  const recent=db.expenses.filter(x=>x.projectId===p.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);
+  const nm=nextMilestone(db,p.id);
+  return e("div",{className:"stack"},
+    e("div",{className:"grid g-kpi"},
+      e("div",{className:"card kpi"},e("div",{className:"l"},CONFIG.financialFields.contract),e("div",{className:"v"},money(p.contract)),e("div",{className:"n"},money(p.deposit)+" "+CONFIG.financialFields.deposit.toLowerCase())),
+      e("div",{className:"card kpi"},e("div",{className:"l"},CONFIG.financialFields.budget),e("div",{className:"v"},money(p.budget)),e("div",{className:"n"+(over?" bad":"")},over? money(sp-p.budget)+" over" : money(p.budget-sp)+" remaining")),
+      e("div",{className:"card kpi"},e("div",{className:"l"},"Spent to date"),e("div",{className:"v"+(over?" over":"")},money(sp)),e("div",{className:"n"},Math.round(br*100)+"% of estimate")),
+      e("div",{className:"card kpi"},e("div",{className:"l"},CONFIG.financialFields.profit),e("div",{className:"v"},money(profit)),e("div",{className:"n "+(profit/p.contract>=.25?"ok":"")},Math.round(profit/p.contract*100)+"% margin"))),
+    e("div",{className:"grid g-split"},
+      e("div",{className:"card"},
+        e("div",{className:"card-h"},e("h2",{className:"t"},"Spend by category"),e("span",{className:"muted num"},money(sp))),
+        cats.length? cats.map(([c,v])=>e("div",{className:"cat-row",key:c}, e("span",{className:"lab"},c), e("div",{className:"bar"},e("i",{className:"gold",style:{width:Math.max(3,v/maxC*100)+"%"}})), e("b",{className:"num"},money(v)))) : e("div",{className:"empty"},"No expenses yet")),
+      e("div",{className:"stack"},
+        e("div",{className:"card"},
+          e("div",{className:"card-h"},e("h2",{className:"t"},"On track?")),
+          e("div",{className:"fig muted",style:{display:"flex",justifyContent:"space-between",fontSize:12.5,marginBottom:6}},e("span",null,"Schedule elapsed"),e("b",{className:"num",style:{color:"var(--ink)"}},Math.round(sr*100)+"%")),
+          e("div",{className:"bar",style:{marginBottom:12}},e("i",{style:{width:sr*100+"%"}})),
+          e("div",{className:"fig muted",style:{display:"flex",justifyContent:"space-between",fontSize:12.5,marginBottom:6}},e("span",null,"Budget used"),e("b",{className:"num",style:{color:over?"var(--bad)":"var(--ink)"}},Math.round(br*100)+"%")),
+          e("div",{className:"bar",style:{marginBottom:12}},e("i",{className:over?"bad":"gold",style:{width:Math.min(100,br*100)+"%"}})),
+          e("p",{className:"muted",style:{margin:0,fontSize:13}}, p.status==="Completed" ? "Project complete." : over ? "Spending is ahead of the estimate. Review change orders before the next draw." : br>sr+.15 ? "Spending is running ahead of the schedule. Worth a look." : "Spending is tracking with the schedule.")),
+        e("div",{className:"card"},
+          e("div",{className:"lrow"},e("div",{className:"grow"},e("div",{className:"tt"},done+" of "+ts.length+" tasks done"),e("div",{className:"mt"+(od.length?" over":"")},od.length? od.length+" overdue":"Nothing overdue")),e("button",{className:"btn ghost sm",onClick:()=>setPtab("tasks")},"Tasks")),
+          e("div",{className:"lrow"},e("div",{className:"grow"},e("div",{className:"tt"},nm?nm.title:"All milestones complete"),e("div",{className:"mt"},nm? "Next milestone · "+whenLabel(nm.date) : "")),e("button",{className:"btn ghost sm",onClick:()=>setPtab("planning")},"Plan"))))),
+    e("div",{className:"card"},
+      e("div",{className:"card-h"},e("h2",{className:"t"},"Recent expenses"),e("button",{className:"lnk",onClick:()=>setPtab("expenses")},"All expenses")),
+      recent.length? recent.map(x=>e("div",{className:"lrow",key:x.id}, e("div",{className:"grow"},e("div",{className:"tt"},x.notes||x.category),e("div",{className:"mt"},x.category+" · "+x.vendor+" · "+fmtD(x.date))), e("b",{className:"num"},money(x.amount)))) : e("div",{className:"empty"},"No expenses yet")));
+}
+
+function Tasks({ctx,p}){
+  const {db,up,notify} = ctx;
+  const [f,setF] = useState("Open");
+  const [adding,setAdding] = useState(false);
+  const all = pTasks(db,p.id);
+  const ms = db.milestones.filter(m=>m.projectId===p.id);
+  const list = all.filter(t=> f==="All" ? true : f==="Open" ? t.status!=="Done" : t.status===f)
+    .sort((a,b)=> (a.status==="Done")-(b.status==="Done") || (a.due||"").localeCompare(b.due||""));
+  const cycle = t => { const i=CONFIG.taskStatuses.indexOf(t.status); const ns=CONFIG.taskStatuses[(i+1)%CONFIG.taskStatuses.length]; up("tasks",ts=>ts.map(x=>x.id===t.id?{...x,status:ns}:x)); };
+  const toggle = t => { const ns = t.status==="Done" ? "To Do" : "Done"; up("tasks",ts=>ts.map(x=>x.id===t.id?{...x,status:ns}:x)); if(ns==="Done") notify("Task completed"); };
+  return e("div",{className:"card"},
+    e("div",{className:"card-h",style:{flexWrap:"wrap"}},
+      e("div",{className:"chips"}, ["Open"].concat(CONFIG.taskStatuses,["All"]).map(s=>e("button",{key:s,className:"chip"+(f===s?" on":""),onClick:()=>setF(s)},s))),
+      e("button",{className:"btn sm",onClick:()=>setAdding(true)},Icon("plus",15),"Add task")),
+    list.length ? list.map(t=>{ const m=ms.find(x=>x.id===t.milestone); const od=isOverdue(t);
+      return e("div",{className:"lrow trow"+(t.status==="Done"?" done":""),key:t.id},
+        e("button",{className:"chk"+(t.status==="Done"?" on":""),onClick:()=>toggle(t),"aria-label":t.status==="Done"?"Mark not done":"Mark done"},Icon("check",14)),
+        e("div",{className:"grow"},
+          e("div",{className:"tt"},t.task),
+          e("div",{className:"mt"}, [t.category,t.assignee].join(" · ")," · ", e("span",{className:od?"over":""}, od? "Overdue, "+fmtD(t.due) : "Due "+whenLabel(t.due)), m? " · ◆ "+m.title : "")),
+        Pill(PRI_CLS[t.priority],t.priority),
+        e("button",{className:"pill "+STATUS_CLS[t.status],onClick:()=>cycle(t),title:"Tap to change status"},t.status),
+        e("button",{className:"x",onClick:()=>up("tasks",ts=>ts.filter(x=>x.id!==t.id)),"aria-label":"Delete task"},Icon("x",15)));
+    }) : e("div",{className:"empty"},"No tasks here"),
+    adding && e(TaskForm,{ms,onClose:()=>setAdding(false),onSave:t=>{ up("tasks",ts=>ts.concat([{...t,id:uid("t"),projectId:p.id}])); setAdding(false); notify("Task added"); }}));
+}
+function TaskForm({ms,onClose,onSave}){
+  const [task,setTask]=useState(""), [category,setCat]=useState(CONFIG.taskCategories[0]), [priority,setPri]=useState("Medium"), [assignee,setWho]=useState(CONFIG.ownerName), [due,setDue]=useState(dOff(3)), [milestone,setMs]=useState("");
+  return e(Modal,{title:"Add task",onClose},
+    e("div",{className:"form"},
+      Field("Task",Inp("tf-task",task,setTask,"text","What needs to happen?"),true),
+      Field("Category",Sel("tf-cat",category,setCat,CONFIG.taskCategories)), Field("Priority",Sel("tf-pri",priority,setPri,CONFIG.taskPriorities)),
+      Field("Assigned to",Inp("tf-who",assignee,setWho)), Field("Due",Inp("tf-due",due,setDue,"date")),
+      Field("Milestone",Sel("tf-ms",milestone,setMs,[{v:"",l:"None"}].concat(ms.map(m=>({v:m.id,l:fmtD(m.date)+" — "+m.title})))),true)),
+    e("div",{className:"actions"}, e("button",{className:"btn ghost",onClick:onClose},"Cancel"), e("button",{className:"btn",disabled:!task.trim(),onClick:()=>onSave({task:task.trim(),category,priority,assignee,due,milestone,status:"To Do"})},"Add task")));
+}
+
+function Expenses({ctx,p}){
+  const {db,up,notify} = ctx;
+  const [date,setDate]=useState(dOff(0)), [amount,setAmount]=useState(""), [category,setCat]=useState(CONFIG.expenseCategories[0]), [vendor,setVendor]=useState(""), [notes,setNotes]=useState("");
+  const [cf,setCf] = useState("All");
+  const list = db.expenses.filter(x=>x.projectId===p.id && (cf==="All"||x.category===cf)).sort((a,b)=>b.date.localeCompare(a.date));
+  const total = list.reduce((a,x)=>a+x.amount,0);
+  const add = () => { up("expenses",xs=>xs.concat([{id:uid("e"),projectId:p.id,date,amount:+amount,category,vendor:vendor||"—",notes}])); setAmount(""); setVendor(""); setNotes(""); notify("Expense logged: "+money(+amount)); };
+  return e("div",{className:"stack"},
+    e("div",{className:"card"},
+      e("div",{className:"card-h"},e("h2",{className:"t"},"Log an expense")),
+      e("div",{className:"form",style:{gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))"}},
+        Field("Date",Inp("ex-date",date,setDate,"date")), Field("Amount",Inp("ex-amt",amount,setAmount,"number","0")),
+        Field("Category",Sel("ex-cat",category,setCat,CONFIG.expenseCategories)), Field("Vendor",e("input",{id:"ex-vendor",list:"vendor-list",value:vendor,onChange:ev=>setVendor(ev.target.value)})),
+        Field("Notes",Inp("ex-notes",notes,setNotes,"text","What was it for?"),true)),
+      e("datalist",{id:"vendor-list"}, db.vendors.map(v=>e("option",{key:v.id,value:v.name}))),
+      e("div",{className:"actions"}, e("button",{className:"btn",disabled:!(Number(amount)>0),onClick:add},Icon("plus",15),"Add expense"))),
+    e("div",{className:"card"},
+      e("div",{className:"card-h",style:{flexWrap:"wrap"}}, e("h2",{className:"t"},"Expenses ",e("span",{className:"muted num",style:{fontFamily:"var(--body)",fontSize:14,fontWeight:500}},"· "+money(total))),
+        e("select",{id:"ex-filter",value:cf,onChange:ev=>setCf(ev.target.value),style:{width:"auto"},"aria-label":"Filter by category"}, ["All"].concat(CONFIG.expenseCategories).map(c=>e("option",{key:c},c)))),
+      list.length? e("div",{className:"tbl-wrap"}, e("table",{className:"tbl"},
+        e("thead",null,e("tr",null,e("th",null,"Date"),e("th",null,"Description"),e("th",null,"Category"),e("th",{className:"r"},"Amount"),e("th",null))),
+        e("tbody",null, list.map(x=>e("tr",{key:x.id}, e("td",{className:"num",style:{whiteSpace:"nowrap"}},fmtD(x.date)), e("td",null,e("div",{style:{fontWeight:600}},x.notes||"—"),e("div",{className:"muted",style:{fontSize:12.5}},x.vendor)), e("td",null,Pill("mute",x.category)), e("td",{className:"r num",style:{fontWeight:600}},money(x.amount)), e("td",{style:{width:36}},e("button",{className:"x",onClick:()=>up("expenses",xs=>xs.filter(y=>y.id!==x.id)),"aria-label":"Delete expense"},Icon("x",15)))))))) : e("div",{className:"empty"},"No expenses in this category")));
+}
+
+function Planning({ctx,p}){
+  const {db,up,notify} = ctx;
+  const [title,setTitle]=useState(""), [date,setDate]=useState(dOff(14));
+  const ms = db.milestones.filter(m=>m.projectId===p.id).sort((a,b)=>a.date.localeCompare(b.date));
+  const nextId = (ms.find(m=>!m.done)||{}).id;
+  return e("div",{className:"grid g-split"},
+    e("div",{className:"card"},
+      e("div",{className:"card-h"},e("h2",{className:"t"},"Milestones"),e("span",{className:"muted"},ms.filter(m=>m.done).length+" of "+ms.length+" complete")),
+      ms.length? e("div",{className:"tl"}, ms.map(m=>{ const ts=db.tasks.filter(t=>t.milestone===m.id), d=ts.filter(t=>t.status==="Done").length;
+        return e("div",{className:"tl-i",key:m.id},
+          e("button",{className:"tl-dot"+(m.done?" on":m.id===nextId?" next":""),onClick:()=>{ up("milestones",xs=>xs.map(x=>x.id===m.id?{...x,done:!x.done}:x)); if(!m.done) notify("Milestone reached: "+m.title); },"aria-label":m.done?"Mark milestone not done":"Mark milestone done"},Icon("check",16)),
+          e("div",null,
+            e("div",{className:"row",style:{justifyContent:"space-between"}}, e("b",{style:{fontSize:15}},m.title), Pill(m.done?"ok":m.id===nextId?"gold":"mute", m.done?"Done":whenLabel(m.date))),
+            e("div",{className:"muted",style:{fontSize:12.5,margin:"3px 0 8px"}},fmtD(m.date)+(ts.length?" · "+d+" of "+ts.length+" linked tasks done":"")),
+            ts.length? e("div",{className:"bar",style:{maxWidth:280}},e("i",{className:"gold",style:{width:(d/ts.length*100)+"%"}})) : null)); })) : e("div",{className:"empty"},"No milestones yet")),
+    e("div",{className:"card"},
+      e("div",{className:"card-h"},e("h2",{className:"t"},"Add a milestone")),
+      e("div",{className:"form",style:{gridTemplateColumns:"minmax(0,1fr)"}}, Field("Title",Inp("ms-title",title,setTitle,"text","e.g. Rough-in inspection")), Field("Target date",Inp("ms-date",date,setDate,"date"))),
+      e("div",{className:"actions"}, e("button",{className:"btn",disabled:!title.trim(),onClick:()=>{ up("milestones",xs=>xs.concat([{id:uid("m"),projectId:p.id,title:title.trim(),date,done:false}])); setTitle(""); notify("Milestone added"); }},Icon("plus",15),"Add milestone")),
+      e("p",{className:"muted",style:{fontSize:12.5,margin:"14px 0 0"}},"Link tasks to a milestone and its progress bar fills in as the crew checks them off.")));
+}
+
+function Quotes({ctx,p}){
+  const {db,up,notify} = ctx;
+  const [adding,setAdding] = useState(false);
+  const qs = db.quotes.filter(q=>q.projectId===p.id);
+  const items = Array.from(new Set(qs.map(q=>q.item)));
+  const accept = q => {
+    up("quotes",all=>all.map(x=> x.projectId===p.id && x.item===q.item ? {...x,status:x.id===q.id?"Accepted":"Rejected"} : x));
+    up("expenses",xs=>xs.concat([{id:uid("e"),projectId:p.id,date:dOff(0),amount:q.amount,category:"Subcontractors",vendor:q.vendor,notes:q.item+" (accepted quote)"}]));
+    notify("Accepted "+q.vendor+". Added "+money(q.amount)+" to expenses.");
+  };
+  return e("div",{className:"stack"},
+    e("div",{className:"row",style:{justifyContent:"space-between"}}, e("p",{className:"muted",style:{margin:0}},"Compare bids side by side. Accepting one rejects the others and logs it as an expense."), e("button",{className:"btn sm",onClick:()=>setAdding(true)},Icon("plus",15),"Add quote")),
+    items.length? items.map(it=>{ const g=qs.filter(q=>q.item===it).sort((a,b)=>a.amount-b.amount); const low=g[0].amount; const decided=g.some(q=>q.status==="Accepted");
+      return e("div",{className:"card qitem",key:it},
+        e("div",{className:"card-h"},e("h2",{className:"t"},it),Pill(decided?"ok":"gold",decided?"Decided":g.length+" bids")),
+        g.map(q=>e("div",{className:"qrow"+(q.status==="Accepted"?" acc":""),key:q.id},
+          e("div",{style:{minWidth:0}}, e("div",{style:{fontWeight:600}},q.vendor), e("div",{className:"muted",style:{fontSize:12.5}}, q.amount===low&&g.length>1? "Lowest bid" : "+"+money(q.amount-low)+" vs lowest")),
+          e("b",{className:"num"},money(q.amount)),
+          q.status==="Pending" ? e("button",{className:"btn sm navy",onClick:()=>accept(q)},"Accept") : Pill(q.status==="Accepted"?"ok":"mute",q.status)))); })
+      : e("div",{className:"empty"},"No quotes yet. Add bids from your subs to compare them here."),
+    adding && e(QuoteForm,{items,vendors:db.vendors,onClose:()=>setAdding(false),onSave:q=>{ up("quotes",all=>all.concat([{...q,id:uid("q"),projectId:p.id,status:"Pending"}])); setAdding(false); notify("Quote added"); }}));
+}
+function QuoteForm({items,vendors,onClose,onSave}){
+  const [item,setItem]=useState(items[0]||""), [vendor,setVendor]=useState(""), [amount,setAmount]=useState("");
+  return e(Modal,{title:"Add quote",onClose},
+    e("div",{className:"form"},
+      Field("Scope / item",e("input",{id:"qf-item",list:"qf-items",value:item,onChange:ev=>setItem(ev.target.value)}),true),
+      e("datalist",{id:"qf-items"},items.map(i=>e("option",{key:i,value:i}))),
+      Field("Vendor",e("input",{id:"qf-vendor",list:"qf-vendors",value:vendor,onChange:ev=>setVendor(ev.target.value)})),
+      e("datalist",{id:"qf-vendors"},vendors.map(v=>e("option",{key:v.id,value:v.name}))),
+      Field("Amount",Inp("qf-amt",amount,setAmount,"number"))),
+    e("div",{className:"actions"}, e("button",{className:"btn ghost",onClick:onClose},"Cancel"), e("button",{className:"btn",disabled:!(item.trim()&&vendor.trim()&&Number(amount)>0),onClick:()=>onSave({item:item.trim(),vendor:vendor.trim(),amount:+amount})},"Add quote")));
+}
+
+/* ═══════════════════════ VENDORS ═══════════════════════ */
+function Vendors({ctx}){
+  const {db,up,notify} = ctx;
+  const [q,setQ]=useState(""), [cat,setCat]=useState("All"), [adding,setAdding]=useState(false);
+  const list = db.vendors.filter(v=>(cat==="All"||v.category===cat) && (v.name+" "+v.category+" "+v.notes).toLowerCase().includes(q.toLowerCase())).sort((a,b)=>a.name.localeCompare(b.name));
+  return e("div",{className:"wrap"},
+    e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow"},db.vendors.length+" contacts"), e("h1",{className:"t"},"Vendors & subs")), e("button",{className:"btn",onClick:()=>setAdding(true)},Icon("plus",16),"Add vendor")),
+    e("div",{className:"row",style:{marginBottom:16}}, e("input",{id:"v-search",value:q,onChange:ev=>setQ(ev.target.value),placeholder:"Search by name, trade, or note",style:{flex:"1 1 240px",width:"auto"}}),
+      e("select",{id:"v-cat",value:cat,onChange:ev=>setCat(ev.target.value),style:{flex:"0 1 200px",width:"auto"},"aria-label":"Category"}, ["All"].concat(CONFIG.vendorCategories).map(c=>e("option",{key:c},c)))),
+    list.length? e("div",{className:"grid g-proj"}, list.map(v=>{ const jobs=db.expenses.filter(x=>x.vendor===v.name); return e("div",{className:"card vcard",key:v.id},
+      e("div",{className:"row",style:{justifyContent:"space-between"}}, Pill("navy",v.category), e("span",{className:"stars"},"★ "+v.rating.toFixed(1))),
+      e("div",{className:"nm",style:{marginTop:10}},v.name),
+      e("div",{className:"ct"}, e("span",{className:"num"},v.phone), e("span",{className:"muted"},v.email)),
+      e("p",{className:"muted",style:{fontSize:13,margin:"10px 0 0"}},v.notes),
+      jobs.length? e("div",{style:{marginTop:10,fontSize:12.5}},e("b",{className:"num"},money(jobs.reduce((a,x)=>a+x.amount,0)))," paid across "+new Set(jobs.map(j=>j.projectId)).size+" project"+(new Set(jobs.map(j=>j.projectId)).size>1?"s":"")) : null); }))
+      : e("div",{className:"empty"},"No vendors match"),
+    adding && e(VendorForm,{onClose:()=>setAdding(false),onSave:v=>{ up("vendors",vs=>vs.concat([{...v,id:uid("v")}])); setAdding(false); notify("Vendor added"); }}));
+}
+function VendorForm({onClose,onSave}){
+  const [name,setName]=useState(""), [category,setCat]=useState(CONFIG.vendorCategories[0]), [phone,setPhone]=useState(""), [email,setEmail]=useState(""), [notes,setNotes]=useState("");
+  return e(Modal,{title:"Add vendor",onClose},
+    e("div",{className:"form"}, Field("Name",Inp("vf-name",name,setName),true), Field("Trade",Sel("vf-cat",category,setCat,CONFIG.vendorCategories)), Field("Phone",Inp("vf-phone",phone,setPhone,"tel")),
+      Field("Email",Inp("vf-email",email,setEmail,"email"),true), Field("Notes",e("textarea",{id:"vf-notes",rows:3,value:notes,onChange:ev=>setNotes(ev.target.value)}),true)),
+    e("div",{className:"actions"}, e("button",{className:"btn ghost",onClick:onClose},"Cancel"), e("button",{className:"btn",disabled:!name.trim(),onClick:()=>onSave({name:name.trim(),category,phone,email,notes,rating:5})},"Add vendor")));
+}
+
+/* ═══════════════════════ LEADS (AI) ═══════════════════════ */
+const INCOMING = [
+  {name:"Daniel Ortiz",service:"Kitchen Remodel",source:"Website form",est:52000,phone:"(804) 555-0355",email:"d.ortiz@example.com",message:"Hi, looking for a quote on a kitchen refresh. New cabinets, counters, and flooring. Hoping to get started soon if possible."},
+  {name:"Rachel Kim",service:"Basement Finish",source:"Google",est:41000,phone:"(804) 555-0372",email:"rachel.kim@example.com",message:"We'd like to finish our basement as a playroom and guest room. Is a free estimate possible next week?"},
+  {name:"Sam & Nora Patel",service:"Deck & Patio",source:"Instagram",est:16000,phone:"(804) 555-0388",email:"patels@example.com",message:"Your composite deck post caught our eye. Our deck is rotting and we want to replace it before summer. Budget around $15k."},
+  {name:"Brian Walsh",service:"Bathroom Remodel",source:"Facebook",est:24000,phone:"(804) 555-0391",email:"bwalsh@example.com",message:"Need our upstairs bath redone. Tub to walk-in shower. How soon could you start?"},
+];
+
+function QuoteFormModal({onClose}){
+  const ref = useRef(null);
+  const [copied,setCopied] = useState(false);
+  useEffect(()=>{ if(ref.current && window.QRCode){ ref.current.innerHTML=""; new window.QRCode(ref.current,{text:CONFIG.quoteFormUrl,width:220,height:220,colorDark:"#0B1B33",colorLight:"#ffffff"}); } },[]);
+  const copy = () => { try{ navigator.clipboard.writeText(CONFIG.quoteFormUrl).then(()=>setCopied(true),()=>{}); }catch(err){} };
+  return e(Modal,{title:"Live quote form",onClose},
+    e("p",{className:"muted",style:{marginTop:0}},"Have your prospect scan this with their phone and send a request. It shows up in Leads within seconds, and "+CONFIG.aiName+" writes the reply."),
+    e("div",{className:"qr"},e("div",{ref})),
+    e("div",{className:"url-box",style:{marginTop:12}},e("code",null,CONFIG.quoteFormUrl),e("button",{className:"btn ghost sm",onClick:copy},copied?"Copied":"Copy")),
+    e("div",{className:"actions"},e("a",{className:"btn",href:CONFIG.quoteFormUrl,target:"_blank",rel:"noopener"},"Open form")));
+}
+
+function Leads({ctx}){
+  const {db,up,notify,setDb,refresh} = ctx;
+  const [tab,setTab] = useState("inbox");
+  const [sel,setSel] = useState(null);
+  const [n,setN] = useState(0);
+  const [qr,setQr] = useState(false);
+  const [checking,setChecking] = useState(false);
+  const leads = db.leads.slice().sort((a,b)=>b.received-a.received);
+  const cur = leads.find(l=>l.id===sel);
+  const nr = needsReply(db).length;
+  const setLead = (id,fn) => up("leads",ls=>ls.map(l=>l.id===id?fn(l):l));
+  const replaceLead = lead => up("leads",ls=>ls.map(l=>l.id===lead.id?lead:l));
+
+  const write = (lead,variant,auto) => {
+    const before = lead.reply && lead.reply.status!=="writing" ? lead.reply : null;
+    setLead(lead.id,l=>({...l,reply:{status:"writing"}}));
+    if(LIVE){
+      api("draftReply",{id:lead.id,variant:variant||0}).then(r=>replaceLead(r.lead)).catch(err=>{ setLead(lead.id,l=>({...l,reply:before})); notify(err.message); });
+      return;
+    }
+    setTimeout(()=>{
+      const text = genReply(lead,variant||0);
+      if(auto){ setLead(lead.id,l=>({...l,stage:l.stage==="New"?"Contacted":l.stage,reply:{status:"sent",auto:true,at:Date.now(),text}})); notify(CONFIG.aiName+" replied to "+lead.name); }
+      else setLead(lead.id,l=>({...l,reply:{status:"draft",text,variant:variant||0}}));
+    }, 1300);
+  };
+  const sendReply = (lead,text) => {
+    if(!LIVE){ setLead(lead.id,l=>({...l,stage:l.stage==="New"?"Contacted":l.stage,reply:{status:"sent",auto:false,at:Date.now(),text}})); notify("Reply sent to "+lead.name); return Promise.resolve(); }
+    return api("sendReply",{id:lead.id,text}).then(r=>{ replaceLead(r.lead); notify(r.lead.reply && r.lead.reply.error ? "Marked sent. "+r.lead.reply.error : "Email sent to "+lead.email); }).catch(err=>notify(err.message));
+  };
+  const setAuto = on => {
+    setDb(d=>({...d,autopilot:on}));
+    notify(on?"Autopilot on. New leads get a reply automatically.":"Autopilot off. Replies wait for your approval.");
+    if(LIVE) api("setAutopilot",{on}).catch(err=>{ setDb(d=>({...d,autopilot:!on})); notify(err.message); });
+  };
+  const setStage = (l,v) => {
+    setLead(l.id,x=>({...x,stage:v})); if(v==="Won") notify(l.name+" marked as won");
+    if(LIVE) api("updateLead",{id:l.id,stage:v}).catch(err=>notify(err.message));
+  };
+  const simulate = () => {
+    const base = INCOMING[n%INCOMING.length]; setN(n+1); setTab("inbox");
+    if(LIVE){
+      notify("Sending a sample lead through the live system…");
+      api("submitLead",{lead:{...base,sample:true}}).then(r=>refresh().then(()=>setSel(r.id))).catch(err=>notify(err.message));
+      return;
+    }
+    const lead = {...base,id:uid("l"),received:Date.now(),stage:"New",reply:null};
+    up("leads",ls=>[lead].concat(ls)); setSel(lead.id);
+    notify("New lead from "+lead.name);
+    setTimeout(()=>write(lead,n,db.autopilot),500);
+  };
+  const gmail = () => {
+    setChecking(true);
+    api("checkGmail").then(r=>{ notify(r.note || (r.imported ? r.imported+" new lead"+(r.imported>1?"s":"")+" from Gmail" : "No new lead emails")); return refresh(); })
+      .catch(err=>notify(err.message)).finally(()=>setChecking(false));
+  };
+
+  return e("div",{className:"wrap"},
+    e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),CONFIG.aiName), e("h1",{className:"t"},"Leads"), e("div",{className:"sub"},"Every inquiry from your website, email, Facebook, Instagram, and Google lands here.")),
+      e("div",{className:"row"},
+        LIVE && CONFIG.quoteFormUrl && e("button",{className:"btn",onClick:()=>setQr(true)},"Live quote form"),
+        LIVE && e("button",{className:"btn ghost",disabled:checking,onClick:gmail},Icon("inbox",16),checking?"Checking…":"Check Gmail"),
+        e("button",{className:"btn navy",onClick:simulate},Icon("plus",16),LIVE?"Sample lead":"Simulate a new lead"))),
+    e("div",{className:"card auto",style:{marginBottom:16}},
+      e("button",{className:"sw"+(db.autopilot?" on":""),role:"switch","aria-checked":db.autopilot,"aria-label":"Autopilot replies",onClick:()=>setAuto(!db.autopilot)},e("i")),
+      e("div",{className:"grow"}, e("b",null,"Autopilot replies are "+(db.autopilot?"on":"off")),
+        e("div",{className:"muted",style:{fontSize:13}}, db.autopilot? CONFIG.aiName+" answers every new lead within a minute, day or night, and offers consultation times." : CONFIG.aiName+" drafts a reply for each new lead. You review it and press send.")),
+      nr? Pill("gold",nr+" waiting on you") : Pill("ok","All leads answered")),
+    e("div",{className:"tabs"}, [["inbox","Inbox"],["pipeline","Pipeline"]].map(([k,l])=>e("button",{key:k,className:"tab"+(tab===k?" on":""),onClick:()=>setTab(k)},l))),
+    tab==="inbox" ?
+      e("div",{className:"inbox"+(cur?" has-sel":"")},
+        e("div",{className:"card ilist ilist-card"}, leads.length ? leads.map(l=>{ const st = !l.reply ? ["bad","No reply yet"] : l.reply.status==="writing" ? ["gold","Writing…"] : l.reply.status==="draft" ? ["gold","Draft ready"] : ["ok", l.reply.auto?"Auto-replied":"Replied"];
+          return e("button",{key:l.id,className:"irow"+(sel===l.id?" on":""),onClick:()=>setSel(l.id)},
+            e("div",{className:"top"},e("span",{className:"nm"},l.name),e("span",{className:"tm"},ago(l.received))),
+            e("div",{className:"ms"},l.message),
+            e("div",{className:"row"},Pill(st[0],st[1]),l.sample&&LIVE?Pill("mute","Sample"):null,e("span",{className:"muted",style:{fontSize:12}},l.service+" · "+l.source))); }) : e("div",{className:"empty"},"No leads yet. Open the quote form or send an email to your lead address.")),
+        cur ? e(LeadDetail,{key:cur.id,lead:cur,write,onSend:text=>sendReply(cur,text),back:()=>setSel(null)}) : e("div",{className:"card idetail"},e("div",{className:"empty"},"Select a lead to read it and see the AI reply.")))
+    : e("div",{className:"kan"}, CONFIG.leadStages.map(st=>{ const ls=leads.filter(l=>l.stage===st); return e("div",{className:"kcol",key:st},
+        e("div",{className:"kcol-h"},st+" ("+ls.length+")",e("span",{className:"num"},money(ls.reduce((a,l)=>a+(l.est||0),0)))),
+        ls.map(l=>e("div",{className:"kcard",key:l.id}, e("b",null,l.name), e("div",{className:"muted",style:{fontSize:12.5}},l.service+(l.est?" · "+money(l.est):"")),
+          e("select",{id:"stage-"+l.id,value:l.stage,"aria-label":"Stage for "+l.name,onChange:ev=>setStage(l,ev.target.value)}, CONFIG.leadStages.map(s=>e("option",{key:s},s)))))); })),
+    qr && e(QuoteFormModal,{onClose:()=>setQr(false)}));
+}
+
+function LeadDetail({lead,write,onSend,back}){
+  const [text,setText] = useState(lead.reply && lead.reply.text || "");
+  const [variant,setVariant] = useState((lead.reply && lead.reply.variant) || 0);
+  const [sending,setSending] = useState(false);
+  useEffect(()=>{ if(lead.reply && lead.reply.status==="draft") setText(lead.reply.text); },[lead.reply && lead.reply.status, lead.reply && lead.reply.text]);
+  const r = lead.reply;
+  const send = () => { setSending(true); Promise.resolve(onSend(text)).finally(()=>setSending(false)); };
+  const contact = [lead.phone,lead.email].filter(Boolean).join(" · ");
+  return e("div",{className:"card idetail stack",style:{gap:14}},
+    e("button",{className:"lnk mobile-only",style:{alignSelf:"flex-start",color:"var(--muted)"},onClick:back},"← All leads"),
+    e("div",{className:"row",style:{justifyContent:"space-between",alignItems:"flex-start"}},
+      e("div",{style:{minWidth:0}}, e("h2",{className:"t"},lead.name), e("div",{className:"muted",style:{fontSize:13,marginTop:3,userSelect:"text",overflowWrap:"anywhere"}},contact)),
+      e("div",{className:"row"}, Pill(STAGE_CLS[lead.stage]||"mute",lead.stage), Pill("mute",lead.source))),
+    e("div",{className:"row muted",style:{fontSize:12.5}}, e("span",null,lead.service), lead.est? e("span",null,"· Est. "+money(lead.est)) : null, e("span",null,"· Received "+ago(lead.received))),
+    e("div",{className:"bubble"},lead.message),
+    e("div",{className:"eyebrow gold",style:{marginTop:4}},Icon("spark",13), !r ? "No reply yet" : r.status==="writing" ? CONFIG.aiName+" is writing" : r.status==="draft" ? "Draft reply · waiting for your approval" : (r.auto?"Sent automatically by ":"Approved by "+CONFIG.ownerName+" · written by ")+CONFIG.aiName+" · "+ago(r.at)),
+    r && r.error && r.status!=="writing" ? e("div",{className:"note"+(r.status==="sent"?"":" bad")},r.error) : null,
+    !r ? e("div",{className:"row"}, e("button",{className:"btn",onClick:()=>write(lead,variant,false)},Icon("spark",15),"Write reply with "+CONFIG.aiName.split(" ")[0])) :
+    r.status==="writing" ? e("div",{className:"bubble ai"},e("span",{className:"writing"},e("i"),e("i"),e("i"))) :
+    r.status==="draft" ? e(React.Fragment,null,
+      e("textarea",{id:"reply-"+lead.id,rows:12,value:text,onChange:ev=>setText(ev.target.value),style:{background:"var(--gold-soft)",borderColor:"#EEDDA6"}}),
+      LIVE && lead.email && !lead.sample ? e("div",{className:"note"},"Sends from your Gmail to "+lead.email+".") : null,
+      e("div",{className:"row",style:{justifyContent:"flex-end"}},
+        e("button",{className:"btn ghost",disabled:sending,onClick:()=>{ const v=variant+1; setVariant(v); write(lead,v,false); }},"Rewrite"),
+        e("button",{className:"btn",disabled:sending||!text.trim(),onClick:send},Icon("send",15),sending?"Sending…":"Approve & send"))) :
+    e("div",{className:"bubble ai"},r.text));
+}
+
+/* ═══════════════════════ SOCIAL (AI) ═══════════════════════ */
+const STYLES = ["Before & After","Progress Update","Tip of the Week","Special Offer"];
+const PLATFORMS = [["Facebook","Facebook"],["Instagram","Instagram"],["Facebook + Instagram","Both"]];
+const PLAT_CLS = {"Facebook":"info","Instagram":"gold","Facebook + Instagram":"navy"};
+function PostImage({p,style,square}){
+  const info = TYPE_INFO[p.type] || TYPE_INFO["Full Gut"];
+  if(style==="Before & After") return e("div",{className:"pimg"+(square?" sq":"")}, e("div",{className:"half before"},e("span",{className:"lbl"},"BEFORE")), e("div",{className:"half after"},e("span",{className:"lbl"},"AFTER")), e("span",{className:"wm"},p.area));
+  const k = style==="Progress Update" ? "In progress · "+p.area : style==="Tip of the Week" ? "Tip of the week" : "Limited spots";
+  const h = style==="Progress Update" ? p.type : style==="Tip of the Week" ? info.tips[0].split(".")[0] : "Free design consultation";
+  const s = style==="Special Offer" ? CONFIG.phone : CONFIG.companyName;
+  return e("div",{className:"pimg"+(square?" sq":"")}, e("div",{className:"center"}, e("div",{className:"k"},k), e("div",{className:"h",style:style==="Tip of the Week"?{fontSize:22}:null},h), e("div",{className:"rule"}), e("div",{className:"s"},s)));
+}
+function PostPreview({p,platform,style,caption,when,photo}){
+  const ig = platform==="Instagram";
+  const img = photo ? e("img",{className:"pimg-photo"+(ig?" sq":""),src:photo,alt:"Post photo"}) : e(PostImage,{p,style,square:ig});
+  return e("div",{className:"mock"},
+    e("div",{className:"mock-h"}, e("div",{className:"av"},CONFIG.logoText), e("div",null, e("div",{className:"nm"},ig?CONFIG.socialHandle:CONFIG.companyName), e("div",{className:"tm"},(when||"Just now")+(ig?"":" · Public")))),
+    !ig && e("div",{className:"mock-cap"},caption),
+    img,
+    ig && e("div",{className:"mock-cap ig"},e("b",null,CONFIG.socialHandle+" "),caption),
+    e("div",{className:"mock-f"}, ig ? [e("span",{key:1},"Like"),e("span",{key:2},"Comment"),e("span",{key:3},"Share"),e("span",{key:4},"Save")] : [e("span",{key:1},"Like"),e("span",{key:2},"Comment"),e("span",{key:3},"Share")]));
+}
+function Social({ctx}){
+  const {db,up,notify} = ctx;
+  const [pid,setPid] = useState(db.projects[0] ? db.projects[0].id : "");
+  const [platform,setPlatform] = useState("Facebook");
+  const [style,setStyle] = useState("Before & After");
+  const [variant,setVariant] = useState(0);
+  const [caption,setCaption] = useState("");
+  const [busy,setBusy] = useState(false);
+  const [posting,setPosting] = useState("");
+  const [photo,setPhoto] = useState(null);
+  const [date,setDate] = useState(dOff(1)), [time,setTime] = useState("10:00");
+  const p = projById(db,pid) || db.projects[0];
+  const gen = v => {
+    setBusy(true);
+    if(LIVE){ api("generatePost",{project:projSummary(db,p),platform,style,variant:v}).then(r=>setCaption(r.caption)).catch(err=>notify(err.message)).finally(()=>setBusy(false)); return; }
+    setTimeout(()=>{ setCaption(genPost(p,platform==="Facebook"?"Facebook":"Instagram",style,v,db)); setBusy(false); },900);
+  };
+  const pickPhoto = ev => { const f = ev.target.files && ev.target.files[0]; ev.target.value=""; if(!f) return; resizePhoto(f).then(setPhoto).catch(err=>notify(err.message)); };
+  const save = status => {
+    const when = new Date(date+"T"+(time||"10:00")).getTime();
+    if(status==="Scheduled" && !(when>Date.now())) return notify("Pick a date and time in the future.");
+    if(LIVE){
+      if(/Instagram/.test(platform) && !photo) return notify("Instagram posts need a photo. Add one first.");
+      setPosting(status);
+      const post = {projectId:p.id,projectName:p.name,platform,style,caption,scheduledAt:when};
+      api(status==="Posted"?"publishPost":"schedulePost",{post,image:photo||""})
+        .then(r=>{ up("posts",ps=>[r.post].concat(ps)); setCaption(""); setPhoto(null); notify(status==="Posted"?"Published to "+platform:"Scheduled for "+whenLabel(date)+" at "+time); })
+        .catch(err=>notify(err.message)).finally(()=>setPosting(""));
+      return;
+    }
+    up("posts",ps=>ps.concat([{id:uid("s"),projectId:p.id,platform,style,caption,date:status==="Posted"?dOff(0):date,time,status}])); setCaption(""); setPhoto(null);
+    notify(status==="Posted"?"Posted to "+platform:"Scheduled for "+whenLabel(date)+" at "+time);
+  };
+  const posts = db.posts.slice().sort((a,b)=>(b.date+(b.time||"")).localeCompare(a.date+(a.time||"")));
+  return e("div",{className:"wrap"},
+    e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),CONFIG.aiName), e("h1",{className:"t"},"Social posts"), e("div",{className:"sub"},LIVE?"Write with AI, then publish straight to your Facebook Page and Instagram.":"Turn any project into a Facebook or Instagram post in one click."))),
+    e("div",{className:"grid g-2",style:{alignItems:"start",marginBottom:16}},
+      e("div",{className:"card stack",style:{gap:14}},
+        e("h2",{className:"t"},"Create a post"),
+        Field("Project",Sel("sp-proj",pid,v=>{setPid(v);setCaption("");},db.projects.map(x=>({v:x.id,l:x.name})))),
+        e("div",{className:"f"},"Platform", e("div",{className:"seg"}, PLATFORMS.map(([v,l])=>e("button",{key:v,className:platform===v?"on":"",onClick:()=>{setPlatform(v);setCaption("");}},l)))),
+        e("div",{className:"f"},"Post type", e("div",{className:"chips"}, STYLES.map(x=>e("button",{key:x,className:"chip"+(style===x?" on":""),onClick:()=>{setStyle(x);setCaption("");}},x)))),
+        e("label",{className:"photo-pick"},
+          e("input",{id:"sp-photo",type:"file",accept:"image/*",onChange:pickPhoto}),
+          photo ? e("img",{src:photo,alt:"Selected photo"}) : e("div",{style:{width:56,height:56,borderRadius:8,background:"var(--paper)",display:"grid",placeItems:"center",color:"var(--muted)"}},Icon("plus",20)),
+          e("div",{style:{flex:1,minWidth:0}}, e("b",null,photo?"Photo added":"Add a project photo"), e("div",{className:"note"}, photo?"Tap to change it.":/Instagram/.test(platform)?"Required for Instagram.":"Optional for Facebook. Posts with a photo get more reach.")),
+          photo ? e("button",{className:"x",onClick:ev=>{ev.preventDefault();setPhoto(null);},"aria-label":"Remove photo"},Icon("x",15)) : null),
+        !caption && e("button",{className:"btn",disabled:busy,onClick:()=>gen(variant)}, busy? e("span",{className:"writing"},e("i"),e("i"),e("i")) : e(React.Fragment,null,Icon("spark",15)," Write it for me")),
+        caption && e(React.Fragment,null,
+          Field("Caption",e("textarea",{id:"sp-cap",rows:9,value:caption,onChange:ev=>setCaption(ev.target.value)})),
+          e("div",{className:"form"}, Field("Date",Inp("sp-date",date,setDate,"date")), Field("Time",Inp("sp-time",time,setTime,"time"))),
+          e("div",{className:"row",style:{justifyContent:"flex-end"}},
+            e("button",{className:"btn ghost",disabled:busy||!!posting,onClick:()=>{ const v=variant+1; setVariant(v); gen(v); }},busy?"Writing…":"Rewrite"),
+            e("button",{className:"btn ghost",disabled:!!posting,onClick:()=>save("Scheduled")},Icon("cal",15),posting==="Scheduled"?"Scheduling…":"Schedule"),
+            e("button",{className:"btn",disabled:!!posting,onClick:()=>save("Posted")},Icon("send",15),posting==="Posted"?"Publishing…":"Post now")),
+          LIVE ? e("div",{className:"note"},"Post now publishes to your real "+(platform==="Facebook + Instagram"?"Facebook Page and Instagram":platform==="Instagram"?"Instagram account":"Facebook Page")+".") : null)),
+      e("div",{className:"stack",style:{gap:10}},
+        e("div",{className:"eyebrow"},"Preview"),
+        e(PostPreview,{p,platform:platform==="Instagram"?"Instagram":"Facebook",style,photo,caption: caption || (busy?"…":"Press Write it for me and the caption appears here.")}))),
+    e("div",{className:"card"},
+      e("div",{className:"card-h"},e("h2",{className:"t"},"Content calendar"),e("span",{className:"muted"},posts.filter(x=>x.status==="Scheduled").length+" scheduled")),
+      posts.length ? posts.map(x=>{ const pr=projById(db,x.projectId); return e("div",{className:"lrow",key:x.id},
+        e("div",{style:{width:52,textAlign:"center",flexShrink:0}}, e("div",{style:{fontSize:11,fontWeight:700,color:"var(--muted)",textTransform:"uppercase"}},toDate(x.date).toLocaleDateString("en-US",{month:"short"})), e("div",{style:{fontFamily:"var(--display)",fontSize:22,fontWeight:600,lineHeight:1}},toDate(x.date).getDate())),
+        e("div",{className:"grow"}, e("div",{className:"tt"},x.style+" · "+(pr?pr.area:(x.projectName||""))),
+          e("div",{className:"mt",style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},(x.caption||"").split("\n")[0]),
+          x.status==="Failed" && x.error ? e("div",{className:"note bad"},x.error) : null,
+          (x.fbUrl||x.igUrl) ? e("div",{className:"row",style:{marginTop:4}}, x.fbUrl? e("a",{className:"lnk",href:x.fbUrl,target:"_blank",rel:"noopener"},"View on Facebook ↗"):null, x.igUrl? e("a",{className:"lnk",href:x.igUrl,target:"_blank",rel:"noopener"},"View on Instagram ↗"):null) : null),
+        Pill(PLAT_CLS[x.platform]||"mute",x.platform==="Facebook + Instagram"?"FB + IG":x.platform), Pill(x.status==="Posted"?"ok":x.status==="Failed"?"bad":"warn",x.status)); }) : e("div",{className:"empty"},"No posts yet")));
+}
+
+/* ═══════════════════════ ASK (AI chat) ═══════════════════════ */
+const SUGGEST = ["What needs my attention today?","Are any jobs over budget?","What's overdue?","How is Hawthorne going?","Which leads need a reply?","Who's my plumber?","Compare the open quotes"];
+function Ask({ctx}){
+  const [msgs,setMsgs] = useState([{r:"ai",t:[`Hi ${CONFIG.ownerName}, I'm ${CONFIG.aiName}. I can see your projects, budgets, tasks, leads, quotes, and vendors. Ask me anything about the business.`]}]);
+  const [q,setQ] = useState(""), [busy,setBusy] = useState(false);
+  const box = useRef(null);
+  useEffect(()=>{ if(box.current) box.current.scrollTop = box.current.scrollHeight; },[msgs,busy]);
+  const send = t => {
+    t=(t||q).trim(); if(!t||busy) return;
+    setQ(""); setMsgs(m=>m.concat([{r:"me",t:[t]}])); setBusy(true);
+    if(LIVE){
+      const history = msgs.slice(1).map(m=>({role:m.r==="me"?"user":"ai",text:m.t.join("\n")}));
+      api("ask",{question:t,history,data:snapshot(ctx.db)})
+        .then(r=>setMsgs(m=>m.concat([{r:"ai",t:toLines(r.answer)}])))
+        .catch(err=>setMsgs(m=>m.concat([{r:"ai",t:["I couldn't reach the AI just now. "+err.message]}])))
+        .finally(()=>setBusy(false));
+      return;
+    }
+    setTimeout(()=>{ setMsgs(m=>m.concat([{r:"ai",t:answer(ctx.db,t)}])); setBusy(false); },850);
+  };
+  return e("div",{className:"wrap",style:{paddingBottom:16}},
+    e("div",{className:"ph",style:{marginBottom:12}}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),LIVE?"Assistant · live":"Assistant"), e("h1",{className:"t"},"Ask "+CONFIG.aiName))),
+    e("div",{className:"card chat"},
+      e("div",{className:"msgs",ref:box,"aria-live":"polite"},
+        msgs.map((m,i)=>e("div",{key:i,className:"msg "+m.r}, m.t.map((line,j)=> line.startsWith("• ") ? e("div",{key:j,className:"li"},e("span",null,rich(line.slice(2)))) : e("p",{key:j},rich(line))))),
+        busy && e("div",{className:"msg ai"},e("span",{className:"writing"},e("i"),e("i"),e("i")))),
+      e("div",{className:"chips",style:{padding:"10px 0 0"}}, SUGGEST.map(s=>e("button",{key:s,className:"chip",onClick:()=>send(s)},s))),
+      e("form",{className:"composer",onSubmit:ev=>{ev.preventDefault();send();}},
+        e("input",{id:"ask-input",value:q,onChange:ev=>setQ(ev.target.value),placeholder:"Ask about budgets, tasks, leads, a project…","aria-label":"Ask a question"}),
+        e("button",{className:"btn",type:"submit",disabled:busy||!q.trim(),"aria-label":"Send"},Icon("send",16)))));
+}
+
+/* ═══════════════════════ PIN (live mode only) ═══════════════════════ */
+function PinScreen({onOk}){
+  const [pin,setPin] = useState(""), [err,setErr] = useState(""), [busy,setBusy] = useState(false), [remember,setRemember] = useState(true);
+  const go = ev => {
+    ev.preventDefault(); if(!pin) return;
+    setBusy(true); setErr(""); PIN = pin;
+    api("getLive").then(r=>{ if(remember) store.set("bf-pin",pin); onOk(r); }).catch(er=>{ setErr(er.message); PIN=""; }).finally(()=>setBusy(false));
+  };
+  return e("div",{className:"pin-wrap"}, e("form",{className:"pin-card",onSubmit:go},
+    e("div",{className:"brand"},e("div",{className:"brand-ic"},CONFIG.logoText),e("h2",{className:"t"},CONFIG.companyName)),
+    e("p",{className:"muted",style:{margin:0}},"Enter your PIN to open the live app."),
+    e("input",{id:"pin",type:"password",inputMode:"numeric",autoComplete:"current-password",value:pin,onChange:ev=>setPin(ev.target.value),"aria-label":"PIN"}),
+    err ? e("div",{className:"err"},err) : null,
+    e("label",{className:"row muted",style:{fontSize:13,gap:8}},e("input",{id:"pin-remember",type:"checkbox",checked:remember,onChange:ev=>setRemember(ev.target.checked),style:{width:"auto"}}),"Remember on this device"),
+    e("button",{className:"btn",type:"submit",disabled:busy||!pin},busy?"Checking…":"Open BuildFlow")));
+}
+
+/* ═══════════════════════ APP ═══════════════════════ */
+function App(){
+  const [db,setDb] = useState(()=>loadDb()||seed());
+  const [view,setView] = useState("home");
+  const [pid,setPid] = useState(null);
+  const [ptab,setPtab] = useState("dashboard");
+  const [toast,setToast] = useState(null);
+  const [resetOpen,setResetOpen] = useState(false);
+  const [authed,setAuthed] = useState(!LIVE);
+  const [booting,setBooting] = useState(LIVE && !!store.get("bf-pin"));
+  const mainRef = useRef(null), tRef = useRef(null), known = useRef(null);
+  useEffect(()=>{ saveDb(db); },[db]);
+  const notify = msg => { setToast(msg); clearTimeout(tRef.current); tRef.current=setTimeout(()=>setToast(null),3200); };
+  const applyLive = r => {
+    const ids = new Set(r.leads.map(l=>l.id));
+    if(known.current){ const fresh = r.leads.filter(l=>!known.current.has(l.id)); if(fresh.length) notify("New lead from "+fresh[0].name+(fresh.length>1?" and "+(fresh.length-1)+" more":"")); }
+    known.current = ids;
+    setDb(d=>({...d,leads:r.leads,posts:r.posts.concat(d.posts.filter(p=>p.sample)),autopilot:!!r.autopilot}));
+  };
+  const refresh = () => api("getLive").then(applyLive);
+  useEffect(()=>{
+    if(!LIVE || !booting) return;
+    PIN = store.get("bf-pin") || "";
+    api("getLive").then(r=>{ applyLive(r); setAuthed(true); }).catch(()=>{ store.set("bf-pin",null); PIN=""; }).finally(()=>setBooting(false));
+  },[]);
+  useEffect(()=>{
+    if(!LIVE || !authed) return;
+    const t = setInterval(()=>{ refresh().catch(()=>{}); },15000);
+    return ()=>clearInterval(t);
+  },[authed]);
+  const up = (key,fn) => setDb(d=>({...d,[key]:fn(d[key])}));
+  const go = (v,id,tab) => { setView(v); if(id!==undefined) setPid(id); if(tab) setPtab(tab); if(mainRef.current) mainRef.current.scrollTop=0; };
+  const ctx = {db,setDb,up,notify,go,view,pid,ptab,setPtab,refresh};
+  const nr = needsReply(db).length;
+  const header = e("header",{className:"hdr"},
+    e("div",{className:"brand"}, e("div",{className:"brand-ic"},CONFIG.logoText), e("div",{className:"brand-name"},CONFIG.companyName)),
+    e("div",{className:"hdr-r"},
+      authed && (LIVE
+        ? e("div",{className:"live-chip"}, e("span",{className:"ld"}), e("span",null,"Live"), e("button",{onClick:()=>setResetOpen(true)},"Reset"))
+        : e("div",{className:"demo-chip"}, e("span",null,"Demo · sample data"), e("button",{onClick:()=>setResetOpen(true)},"Reset"))),
+      e("img",{className:"bf-logo",src:BF_LOGO,alt:"BuildFlow by Weblina LLC"})));
+  if(LIVE && !authed){
+    return e("div",{className:"app"}, header,
+      booting ? e("div",{className:"pin-wrap"},e("span",{className:"writing"},e("i"),e("i"),e("i"))) : e(PinScreen,{onOk:r=>{ applyLive(r); setAuthed(true); }}));
+  }
+  const SI = (key,label,icon,extra) => e("button",{className:"si"+(view===key?" on":""),onClick:()=>go(key)},Icon(icon,17),e("span",{className:"nm"},label),extra||null);
+  const nav = [["home","Home","home"],["projects","Projects","folder"],["leads","Leads","inbox"],["social","Social","mega"],["ask","Ask AI","spark"]];
+  const screen = view==="home" ? e(Home,{ctx}) : view==="projects" ? e(Projects,{ctx}) : view==="project" ? e(ProjectView,{ctx}) : view==="vendors" ? e(Vendors,{ctx}) : view==="leads" ? e(Leads,{ctx}) : view==="social" ? e(Social,{ctx}) : e(Ask,{ctx});
+  const doReset = () => {
+    const s = seed();
+    setDb(d => LIVE ? {...s,leads:d.leads,posts:d.posts.filter(p=>!p.sample).concat(s.posts),autopilot:d.autopilot} : s);
+    setResetOpen(false); go("home",null); notify(LIVE?"Sample project data reset":"Demo reset");
+  };
+  return e("div",{className:"app"},
+    header,
+    e("div",{className:"shell"},
+      e("nav",{className:"side","aria-label":"Main"},
+        SI("home","Home","home"),
+        SI("projects","Projects","folder"),
+        openProjects(db).map(p=>e("button",{key:p.id,className:"si sub"+(view==="project"&&pid===p.id?" on":""),onClick:()=>go("project",p.id,"dashboard")},e("span",{className:"dot",style:{background:PROJ_DOT[p.status]}}),e("span",{className:"nm"},p.name))),
+        SI("vendors","Vendors","users"),
+        e("div",{className:"side-label ai"},Icon("spark",12),CONFIG.aiName),
+        SI("leads","Leads","inbox", nr? e("span",{className:"cnt"},nr) : null),
+        SI("social","Social posts","mega"),
+        SI("ask","Ask "+CONFIG.aiName.split(" ")[0],"spark"),
+        e("div",{className:"side-foot"},e("b",null,CONFIG.aiName)," powered by BuildFlow",e("br"),"Weblina LLC")),
+      e("main",{className:"main",ref:mainRef}, screen)),
+    e("nav",{className:"bnav","aria-label":"Main"}, nav.map(([k,l,ic])=>e("button",{key:k,className:(view===k||(k==="projects"&&(view==="project"||view==="vendors")))?"on":"",onClick:()=>go(k)},Icon(ic,20),l))),
+    toast && e("div",{className:"toast",role:"status"},e("span",{className:"spark"},Icon("spark",16)),toast),
+    resetOpen && e(Modal,{title:LIVE?"Reset sample project data?":"Reset the demo?",onClose:()=>setResetOpen(false)},
+      e("p",{className:"muted",style:{marginTop:0}},LIVE?"This reloads the sample projects, tasks, expenses, and quotes on this device. Live leads and published posts are not touched.":"This clears everything you've added or changed and reloads the original sample data."),
+      e("div",{className:"actions"}, e("button",{className:"btn ghost",onClick:()=>setResetOpen(false)},"Cancel"), e("button",{className:"btn navy",onClick:doReset},"Reset"))));
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+//]]>
 </script>
+
 </body>
 </html>
