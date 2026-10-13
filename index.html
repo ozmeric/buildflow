@@ -218,6 +218,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 .kcard select{margin-top:8px;padding:5px 8px;font-size:12.5px}
 
 /* Social */
+.f .seg{justify-self:start;max-width:100%;overflow-x:auto}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
 .seg button{border:0;background:var(--white);padding:8px 14px;font-weight:600;cursor:pointer;color:var(--muted)}
 .seg button.on{background:var(--navy);color:#fff}
@@ -310,6 +311,11 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 .note{font-size:12.5px;color:var(--muted)}
 .note.bad{color:var(--bad)}
 a.lnk{text-decoration:none}
+.acard{margin-top:10px;border:1px solid #EEDDA6;background:var(--gold-soft);border-radius:10px;padding:12px 12px 10px}
+.aitem{display:flex;gap:9px;align-items:flex-start;padding:5px 0;font-size:13.5px;line-height:1.45}
+.aitem.off{color:var(--muted);text-decoration:line-through}
+.aitem .lnk{margin-left:auto;font-size:12.5px;flex-shrink:0}
+.aic{width:22px;height:22px;border-radius:6px;background:var(--white);display:grid;place-items:center;color:var(--gold-ink);flex-shrink:0}
 </style>
 
 </head>
@@ -439,14 +445,15 @@ const needsReply = db => db.leads.filter(l=>!l.reply || l.reply.status==="draft"
 function snapshot(db){
   return {
     today: iso(T0), company: CONFIG.companyName, owner: CONFIG.ownerName,
+    lists: {expenseCategories:CONFIG.expenseCategories, taskCategories:CONFIG.taskCategories, vendorCategories:CONFIG.vendorCategories},
     projects: db.projects.map(p=>{ const ts=pTasks(db,p.id); const cats={}; db.expenses.filter(x=>x.projectId===p.id).forEach(x=>{cats[x.category]=(cats[x.category]||0)+x.amount;});
-      return {name:p.name,neighborhood:p.area,client:p.client,type:p.type,status:p.status,contractValue:p.contract,estimatedCost:p.budget,spentToDate:spent(db,p.id),depositReceived:p.deposit,start:p.start,targetFinish:p.end,
+      return {id:p.id,name:p.name,neighborhood:p.area,client:p.client,type:p.type,status:p.status,contractValue:p.contract,estimatedCost:p.budget,spentToDate:spent(db,p.id),depositReceived:p.deposit,start:p.start,targetFinish:p.end,
         spendByCategory:cats, tasksDone:ts.filter(t=>t.status==="Done").length,
-        openTasks:ts.filter(t=>t.status!=="Done").map(t=>({task:t.task,status:t.status,priority:t.priority,due:t.due,assignee:t.assignee,overdue:isOverdue(t)})),
-        milestones:db.milestones.filter(m=>m.projectId===p.id).map(m=>({title:m.title,date:m.date,done:m.done})),
+        openTasks:ts.filter(t=>t.status!=="Done").map(t=>({id:t.id,task:t.task,status:t.status,priority:t.priority,due:t.due,assignee:t.assignee,overdue:isOverdue(t)})),
+        milestones:db.milestones.filter(m=>m.projectId===p.id).map(m=>({id:m.id,title:m.title,date:m.date,done:m.done})),
         quotes:db.quotes.filter(q=>q.projectId===p.id).map(q=>({item:q.item,vendor:q.vendor,amount:q.amount,status:q.status})),
         recentExpenses:db.expenses.filter(x=>x.projectId===p.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(x=>({date:x.date,amount:x.amount,category:x.category,vendor:x.vendor,notes:x.notes}))}; }),
-    vendors: db.vendors.map(v=>({name:v.name,trade:v.category,phone:v.phone,email:v.email,rating:v.rating,notes:v.notes})),
+    vendors: db.vendors.map(v=>({id:v.id,name:v.name,trade:v.category,phone:v.phone,email:v.email,rating:v.rating,notes:v.notes})),
     leads: db.leads.map(l=>({name:l.name,service:l.service,source:l.source,stage:l.stage,estimatedValue:l.est,received:new Date(l.received).toISOString(),message:(l.message||"").slice(0,300),replyStatus:l.reply?l.reply.status:"none"})),
     socialPosts: db.posts.map(p=>({platform:p.platform,type:p.style,date:p.date,status:p.status})),
     autopilot: db.autopilot,
@@ -455,7 +462,7 @@ function snapshot(db){
 /* What the AI needs to write a post about one project */
 function projSummary(db,p){
   const ts=pTasks(db,p.id), nm=nextMilestone(db,p.id);
-  return {name:p.name,neighborhood:p.area,type:p.type,status:p.status,clientFirstName:first(p.client.replace(/^The /,"")),start:p.start,targetFinish:p.end,
+  return {id:p.id,name:p.name,neighborhood:p.area,type:p.type,status:p.status,clientFirstName:first(p.client.replace(/^The /,"")),start:p.start,targetFinish:p.end,
     tasksDone:ts.filter(t=>t.status==="Done").length,tasksTotal:ts.length,nextMilestone:nm?nm.title:"",completedMilestones:db.milestones.filter(m=>m.projectId===p.id&&m.done).map(m=>m.title),
     weeksIn:Math.max(1,Math.ceil((T0-toDate(p.start))/DAY/7))};
 }
@@ -563,7 +570,7 @@ function seed(){
     P("p2","Instagram","Progress Update",1,"Scheduled"),
     P("p3","Facebook","Tip of the Week",3,"Scheduled"),
   ];
-  return {v:2,day:iso(T0),autopilot:false,projects,expenses,milestones,tasks,quotes,vendors,leads,posts};
+  return {v:3,day:iso(T0),autopilot:false,autoSocial:defaultAutoSocial(),projects,expenses,milestones,tasks,quotes,vendors,leads,posts};
 }
 
 /* ── "AI" writers (simulated for the demo; the live product connects to a real model) ── */
@@ -727,9 +734,177 @@ function brief(db){
 const richHTML = s => ({__html: s});
 const rich = s => s.split("**").map((part,i)=> i%2 ? e("b",{key:i},part) : part);
 
+/* ── Automated social posting (settings live on the server in live mode) ── */
+const WEEKDAYS = [[1,"Mon"],[2,"Tue"],[3,"Wed"],[4,"Thu"],[5,"Fri"],[6,"Sat"],[7,"Sun"]];
+function defaultAutoSocial(){ return {settings:{enabled:false,mode:"approve",days:[2,4],time:"10:00",platform:"Facebook",styles:["Progress Update","Before & After","Tip of the Week"]},next:0,photos:0,idx:0}; }
+function nextRunLocal(cfg){
+  if(!cfg.days || !cfg.days.length) return 0;
+  const [hh,mm] = (cfg.time||"10:00").split(":").map(Number);
+  for(let d=0; d<15; d++){
+    const day = new Date(T0.getTime()+d*DAY); day.setHours(hh,mm,0,0);
+    const wd = day.getDay()===0 ? 7 : day.getDay();
+    if(cfg.days.indexOf(wd)>-1 && day.getTime()>Date.now()+60000) return day.getTime();
+  }
+  return 0;
+}
+const fmtWhen = ms => ms ? new Date(ms).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" at "+new Date(ms).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}) : "";
+
+/* ── Foreman changes: what the AI proposes, shown as a card, applied only on confirm ── */
+const validDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s||"");
+const oneOf = (v,list,fallback) => list.indexOf(v)>-1 ? v : fallback;
+function describeAction(db,a){
+  const P = projById(db,a.projectId), M = db.milestones.find(m=>m.id===a.milestoneId), T = db.tasks.find(t=>t.id===a.taskId), V = db.vendors.find(v=>v.id===a.vendorId);
+  const bad = text => ({ok:false,text});
+  switch(a.type){
+    case "addExpense":
+      if(!P) return bad("Add an expense: project not found");
+      if(!(Number(a.amount)>0)) return bad("Add an expense: amount missing");
+      return {ok:true,icon:"plus",text:`Add ${money(+a.amount)} expense to ${P.name} · ${oneOf(a.category,CONFIG.expenseCategories,"Miscellaneous")}${a.vendor?" · "+a.vendor:""}${a.notes?" · "+a.notes:""}`,go:["project",P.id,"expenses"]};
+    case "addMilestone":
+      if(!P) return bad("Add a milestone: project not found");
+      if(!a.title || !validDate(a.date)) return bad("Add a milestone: title or date missing");
+      return {ok:true,icon:"flag",text:`Add milestone "${a.title}" to ${P.name} on ${fmtD(a.date)}`,go:["project",P.id,"planning"]};
+    case "updateMilestone": {
+      if(!M) return bad("Update a milestone: milestone not found");
+      const parts = [];
+      if(validDate(a.date) && a.date!==M.date) parts.push("move from "+fmtD(M.date)+" to "+fmtD(a.date));
+      if(a.title && a.title!==M.title) parts.push(`rename to "${a.title}"`);
+      if(typeof a.done==="boolean" && a.done!==M.done) parts.push(a.done?"mark done":"mark not done");
+      if(!parts.length) return bad(`"${M.title}": nothing to change`);
+      return {ok:true,icon:"flag",text:`Milestone "${M.title}" (${projById(db,M.projectId).area}): ${parts.join(", ")}`,go:["project",M.projectId,"planning"]};
+    }
+    case "addTask":
+      if(!P) return bad("Add a task: project not found");
+      if(!a.task) return bad("Add a task: task text missing");
+      return {ok:true,icon:"check",text:`Add task "${a.task}" to ${P.name}${validDate(a.due)?", due "+fmtD(a.due):""}${a.assignee?", for "+a.assignee:""}`,go:["project",P.id,"tasks"]};
+    case "updateTask": {
+      if(!T) return bad("Update a task: task not found");
+      const parts = [];
+      if(a.status && a.status!==T.status && CONFIG.taskStatuses.indexOf(a.status)>-1) parts.push("status → "+a.status);
+      if(validDate(a.due) && a.due!==T.due) parts.push("due → "+fmtD(a.due));
+      if(a.assignee && a.assignee!==T.assignee) parts.push("assign to "+a.assignee);
+      if(a.priority && a.priority!==T.priority && CONFIG.taskPriorities.indexOf(a.priority)>-1) parts.push("priority → "+a.priority);
+      if(!parts.length) return bad(`"${T.task}": nothing to change`);
+      return {ok:true,icon:"check",text:`Task "${T.task}": ${parts.join(", ")}`,go:["project",T.projectId,"tasks"]};
+    }
+    case "addVendor":
+      if(!a.name) return bad("Add a vendor: name missing");
+      return {ok:true,icon:"users",text:`Add vendor ${a.name} · ${oneOf(a.category,CONFIG.vendorCategories,"Other")}${a.phone?" · "+a.phone:""}${a.email?" · "+a.email:""}`,go:["vendors"]};
+    case "updateVendor": {
+      if(!V) return bad("Update a vendor: vendor not found");
+      const parts = ["phone","email","category","notes"].filter(k=>a[k] && a[k]!==V[k]).map(k=>k+" → "+a[k]);
+      if(!parts.length) return bad(`${V.name}: nothing to change`);
+      return {ok:true,icon:"users",text:`Vendor ${V.name}: ${parts.join(", ")}`,go:["vendors"]};
+    }
+    default: return bad("Unsupported change: "+a.type);
+  }
+}
+function applyAction(up,a){
+  switch(a.type){
+    case "addExpense": up("expenses",xs=>xs.concat([{id:uid("e"),projectId:a.projectId,date:validDate(a.date)?a.date:dOff(0),amount:+a.amount,category:oneOf(a.category,CONFIG.expenseCategories,"Miscellaneous"),vendor:a.vendor||"—",notes:a.notes||""}])); break;
+    case "addMilestone": up("milestones",ms=>ms.concat([{id:uid("m"),projectId:a.projectId,title:a.title,date:a.date,done:false}])); break;
+    case "updateMilestone": up("milestones",ms=>ms.map(m=>m.id!==a.milestoneId?m:{...m,...(a.title?{title:a.title}:{}),...(validDate(a.date)?{date:a.date}:{}),...(typeof a.done==="boolean"?{done:a.done}:{})})); break;
+    case "addTask": up("tasks",ts=>ts.concat([{id:uid("t"),projectId:a.projectId,task:a.task,category:oneOf(a.category,CONFIG.taskCategories,"Admin"),priority:oneOf(a.priority,CONFIG.taskPriorities,"Medium"),status:"To Do",assignee:a.assignee||CONFIG.ownerName,due:validDate(a.due)?a.due:dOff(3),milestone:a.milestoneId||""}])); break;
+    case "updateTask": up("tasks",ts=>ts.map(t=>t.id!==a.taskId?t:{...t,...(CONFIG.taskStatuses.indexOf(a.status)>-1?{status:a.status}:{}),...(validDate(a.due)?{due:a.due}:{}),...(a.assignee?{assignee:a.assignee}:{}),...(CONFIG.taskPriorities.indexOf(a.priority)>-1?{priority:a.priority}:{})})); break;
+    case "addVendor": up("vendors",vs=>vs.concat([{id:uid("v"),name:a.name,category:oneOf(a.category,CONFIG.vendorCategories,"Other"),phone:a.phone||"",email:a.email||"",notes:a.notes||"",rating:5}])); break;
+    case "updateVendor": up("vendors",vs=>vs.map(v=>v.id!==a.vendorId?v:{...v,...["phone","email","category","notes"].reduce((o,k)=>(a[k]?{...o,[k]:a[k]}:o),{})})); break;
+  }
+}
+
+/* ── Demo-mode command reader (live mode uses Gemini instead) ── */
+const WD = {monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sunday:7,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6,sun:7};
+const MON = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+function parseWhen(s){
+  s = s.toLowerCase(); let m;
+  if((m = s.match(/\b(\d{4}-\d{2}-\d{2})\b/))) return m[1];
+  if(/\btoday\b/.test(s)) return dOff(0);
+  if(/\btomorrow\b/.test(s)) return dOff(1);
+  if((m = s.match(/\bin (\d+|a|one|two|three) (day|days|week|weeks)\b/))){ const n = {a:1,one:1,two:2,three:3}[m[1]] || Number(m[1]); return dOff(n*(/week/.test(m[2])?7:1)); }
+  if((m = s.match(/\b(next|this|on)?\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b/))){
+    const want = WD[m[2]], now = T0.getDay()===0?7:T0.getDay(); let d = (want-now+7)%7 || 7; if(m[1]==="next" && d<3) d += 7; return dOff(d);
+  }
+  if((m = s.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b/))){ let dt = new Date(T0.getFullYear(),MON[m[1]],Number(m[2])); if(dt < T0 - 60*DAY) dt = new Date(T0.getFullYear()+1,MON[m[1]],Number(m[2])); return iso(dt); }
+  if((m = s.match(/\b(\d{1,2})\/(\d{1,2})\b/))) return iso(new Date(T0.getFullYear(),Number(m[1])-1,Number(m[2])));
+  return null;
+}
+const words = s => s.toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>3);
+function matchProject(db,s){ const t=s.toLowerCase(); return db.projects.find(p=>t.includes(p.area.toLowerCase()) || t.includes(p.name.toLowerCase().split(" ")[0]) || t.includes(p.client.toLowerCase().replace(/^the /,"").split(/[ &]/)[0])); }
+function bestMatch(list,s,field){ const w=words(s); let best=null, score=0; list.forEach(x=>{ const sc=words(x[field]).filter(k=>w.indexOf(k)>-1).length; if(sc>score){score=sc;best=x;} }); return best ? {item:best,score} : null; }
+const EXP_KEYS = [[/tile|lumber|drywall|material|supplies|paint\b|grout/,"Materials"],[/labor|crew|hours|wages/,"Labor"],[/plumb|electric|sub\b|subcontract|hvac/,"Subcontractors"],[/cabinet|counter|quartz|granite/,"Cabinets & Counters"],[/fixture|faucet|vanity|toilet|light/,"Fixtures"],[/permit|inspection fee/,"Permits & Fees"],[/dumpster|haul|demo/,"Demo & Hauling"],[/rent|rental|equipment|lift|scaffold/,"Equipment Rental"]];
+const VEN_KEYS = [[/electric/,"Electrical"],[/plumb/,"Plumbing"],[/hvac|heating|air cond/,"HVAC"],[/drywall/,"Drywall"],[/tile|stone/,"Tile & Stone"],[/counter|quartz|granite/,"Countertops"],[/cabinet/,"Cabinets"],[/glass|mirror|shower door/,"Glass"],[/haul|dumpster|junk/,"Hauling"],[/supply|supplier|lumber|store/,"Supplier"],[/inspect/,"Inspector"]];
+function parseCommand(db,text){
+  const s = text.toLowerCase(), A = [], note = [];
+  const ok = (msg) => ({answer:[msg,"Review the change below, then press Apply."],actions:A});
+  // add vendor
+  if(/\b(add|new|save)\b.*\b(vendor|sub|subcontractor|contractor|supplier)\b/.test(s)){
+    const rest = text.replace(/^.*?\b(vendor|subcontractor|contractor|supplier|sub)\b[:\s]*/i,"");
+    const phone = (rest.match(/\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/)||[""])[0];
+    const email = (rest.match(/[\w.+-]+@[\w-]+\.[\w.]+/)||[""])[0];
+    const chunks = rest.split(/,/).map(x=>x.trim()).filter(Boolean);
+    const name = (chunks[0]||"").replace(phone,"").replace(email,"").trim();
+    const cat = (VEN_KEYS.find(([re])=>re.test(s))||[0,"Other"])[1];
+    const notes = chunks.slice(1).filter(c=>c!==phone && c!==email && (cat==="Other" || !VEN_KEYS.some(([re])=>re.test(c.toLowerCase())))).join(", ");
+    if(!name) return {answer:["What's the vendor's name? For example: Add vendor Blue Ridge Painting, painter, (804) 555-0170."],actions:[]};
+    A.push({type:"addVendor",name,category:cat,phone,email,notes});
+    return ok(`I'll add **${name}** to your vendors.`);
+  }
+  // add expense
+  if(/\b(add|log|record|enter|spent|paid)\b/.test(s) && /(expense|spent|paid|cost|receipt|invoice|\$)/.test(s)){
+    const m = s.match(/\$\s?([\d,]+(?:\.\d+)?)\s*(k)?\b/) || s.match(/\b([\d,]+(?:\.\d+)?)\s*(k)?\s*(dollars|bucks)\b/);
+    const amount = m ? Number(m[1].replace(/,/g,""))*(m[2]?1000:1) : 0;
+    const p = matchProject(db,text);
+    if(!p) return {answer:["Which project is this expense for? "+openProjects(db).map(x=>x.area).join(", ")+"?"],actions:[]};
+    if(!amount) return {answer:["How much was it? For example: Add a $450 tile expense to "+p.area+"."],actions:[]};
+    const cat = (EXP_KEYS.find(([re])=>re.test(s))||[0,"Miscellaneous"])[1];
+    const v = db.vendors.find(x=>s.includes(x.name.toLowerCase())) ;
+    const fromM = text.match(/\bfrom ([A-Z][\w&' .-]+?)(?:\s+(?:for|to|at|on)\b|[,.]|$)/);
+    const what = (text.match(/\$?[\d,.]+k?\s+(.+?)\s+expense/i)||[])[1] || (text.match(/\bfor (.+?)(?:\s+(?:to|at|on|from)\b|[,.]|$)/i)||[])[1] || "";
+    A.push({type:"addExpense",projectId:p.id,amount,category:cat,vendor:v?v.name:(fromM?fromM[1].trim():""),date:parseWhen(text)||dOff(0),notes:what.replace(/^(a|an|the)\s+/i,"")});
+    return ok(`I'll log **${money(amount)}** to ${p.name}.`);
+  }
+  // milestones
+  const p = matchProject(db,text);
+  const msPool = p ? db.milestones.filter(x=>x.projectId===p.id) : db.milestones;
+  if(/\badd\b.*\bmilestone\b/.test(s)){
+    if(!p) return {answer:["Which project should the milestone go on?"],actions:[]};
+    const title = (text.match(/["“](.+?)["”]/)||[])[1] || (text.match(/milestone\s+(.+?)(?:\s+(?:to|for|on|by)\b|$)/i)||[])[1];
+    const date = parseWhen(text);
+    if(!title || !date) return {answer:["Give me a title and a date, like: Add milestone \"Final inspection\" to "+p.area+" on Nov 20."],actions:[]};
+    A.push({type:"addMilestone",projectId:p.id,title:title.trim(),date});
+    return ok(`I'll add a milestone to ${p.name}.`);
+  }
+  const msM = bestMatch(msPool,text,"title"), tkM = bestMatch(p?db.tasks.filter(t=>t.projectId===p.id):db.tasks,text,"task");
+  const preferTask = tkM && (!msM || tkM.score > msM.score || (/\btask\b/.test(s) && !/\bmilestone\b/.test(s)));
+  const ms = preferTask ? null : (msM && msM.item);
+  if(ms && /\b(mark|set|is|are)\b.*\b(done|complete|completed|finished|reached)\b|\b(finished|completed)\b/.test(s)){
+    A.push({type:"updateMilestone",milestoneId:ms.id,done:true});
+    return ok(`I'll mark **${ms.title}** as done.`);
+  }
+  if(ms && /\b(move|push|reschedule|shift|change|delay|pull|set|slide)\b/.test(s)){
+    const date = parseWhen(text);
+    if(!date) return {answer:[`When should "${ms.title}" move to? For example: next Friday or Oct 30.`],actions:[]};
+    A.push({type:"updateMilestone",milestoneId:ms.id,date});
+    return ok(`I'll move **${ms.title}** to ${fmtD(date)}.`);
+  }
+  // tasks
+  if(/\badd\b.*\btask\b/.test(s)){
+    if(!p) return {answer:["Which project should the task go on?"],actions:[]};
+    const task = (text.match(/["“](.+?)["”]/)||[])[1] || (text.match(/task\s+(?:to\s+)?(.+?)(?:\s+(?:to|for|on|by|due)\s+(?:the\s+)?(?:[A-Z]|next|tomorrow|today|\d)|$)/i)||[])[1];
+    if(!task) return {answer:["What's the task? For example: Add task \"Order grout\" to "+p.area+" due Friday."],actions:[]};
+    A.push({type:"addTask",projectId:p.id,task:task.trim(),category:"Admin",priority:/urgent|asap/.test(s)?"Urgent":"Medium",assignee:CONFIG.ownerName,due:parseWhen(text)||dOff(3)});
+    return ok(`I'll add a task to ${p.name}.`);
+  }
+  const tk = tkM && tkM.item;
+  if(tk && /\b(mark|set)\b.*\b(done|complete|completed|finished)\b/.test(s)){
+    A.push({type:"updateTask",taskId:tk.id,status:"Done"});
+    return ok(`I'll mark **${tk.task}** as done.`);
+  }
+  return null;
+}
+
 /* ── storage (demo resets each day so dates stay realistic) ── */
 const KEY = "buildflow-demo";
-function loadDb(){ try{ const raw=localStorage.getItem(KEY); if(!raw) return null; const d=JSON.parse(raw); if(d.v!==2 || d.day!==iso(T0)) return null; return d; }catch(err){ return null; } }
+function loadDb(){ try{ const raw=localStorage.getItem(KEY); if(!raw) return null; const d=JSON.parse(raw); if(d.v!==3 || d.day!==iso(T0)) return null; return d; }catch(err){ return null; } }
 function saveDb(d){ try{ localStorage.setItem(KEY,JSON.stringify(d)); }catch(err){} }
 
 /* ═══════════════════════ shared UI ═══════════════════════ */
@@ -1178,6 +1353,74 @@ function PostPreview({p,platform,style,caption,when,photo}){
     ig && e("div",{className:"mock-cap ig"},e("b",null,CONFIG.socialHandle+" "),caption),
     e("div",{className:"mock-f"}, ig ? [e("span",{key:1},"Like"),e("span",{key:2},"Comment"),e("span",{key:3},"Share"),e("span",{key:4},"Save")] : [e("span",{key:1},"Like"),e("span",{key:2},"Comment"),e("span",{key:3},"Share")]));
 }
+function AutoPostPanel({ctx}){
+  const {db,setDb,up,notify} = ctx;
+  const st = db.autoSocial || defaultAutoSocial();
+  const [cfg,setCfg] = useState(st.settings);
+  const [busy,setBusy] = useState("");
+  const [open,setOpen] = useState(!!st.settings.enabled);
+  const sig = JSON.stringify(st.settings);
+  useEffect(()=>{ setCfg(st.settings); },[sig]);
+  const dirty = JSON.stringify(cfg)!==sig;
+  const next = LIVE ? st.next : (st.settings.enabled ? nextRunLocal(st.settings) : 0);
+  const setAuto = fn => setDb(d=>({...d,autoSocial:fn(d.autoSocial||defaultAutoSocial())}));
+  const persist = (settings,msg) => {
+    if(!LIVE){ setAuto(a=>({...a,settings})); if(msg) notify(msg); return; }
+    setBusy("save");
+    api("saveAutoSocial",{settings}).then(r=>{ setAuto(a=>({...a,...r.autoSocial})); if(msg) notify(msg); }).catch(err=>notify(err.message)).finally(()=>setBusy(""));
+  };
+  const toggle = () => { const s2 = {...cfg,enabled:!st.settings.enabled}; setCfg(s2); setOpen(true); persist(s2, s2.enabled?"Autopilot posting on":"Autopilot posting off"); };
+  const toggleIn = (key,val) => setCfg(c=>{ const arr=c[key]||[]; const nx = arr.indexOf(val)>-1 ? arr.filter(x=>x!==val) : arr.concat([val]); return {...c,[key]: key==="days" ? nx.sort((a,b)=>a-b) : nx}; });
+  const runNow = () => {
+    setBusy("run");
+    if(LIVE){
+      api("runAutoSocialNow").then(r=>{ up("posts",ps=>[r.post].concat(ps)); setAuto(a=>({...a,...r.autoSocial}));
+        notify(r.post.status==="Draft"?"Draft ready for your approval":r.post.status==="Posted"?"Published to "+r.post.platform:(r.post.error||"The post failed")); })
+        .catch(err=>notify(err.message)).finally(()=>setBusy(""));
+      return;
+    }
+    setTimeout(()=>{
+      const pool = db.projects.filter(p=>p.status!=="Planning"); const i = st.idx||0; const p = pool[i%pool.length];
+      const style = cfg.styles[i%cfg.styles.length] || "Progress Update"; const status = cfg.mode==="approve" ? "Draft" : "Posted";
+      up("posts",ps=>[{id:uid("s"),projectId:p.id,platform:cfg.platform,style,caption:genPost(p,cfg.platform==="Facebook"?"Facebook":"Instagram",style,i,db),date:dOff(0),time:new Date().toTimeString().slice(0,5),status,auto:true}].concat(ps));
+      setAuto(a=>({...a,idx:i+1}));
+      notify(status==="Draft"?"Draft ready for your approval":"Posted to "+cfg.platform); setBusy("");
+    },1100);
+  };
+  const addPhotos = ev => {
+    const files = Array.from(ev.target.files||[]).slice(0,10); ev.target.value=""; if(!files.length) return;
+    setBusy("photos");
+    Promise.all(files.map(resizePhoto)).then(imgs=>{
+      const msg = imgs.length+" photo"+(imgs.length>1?"s":"")+" added to the library";
+      if(!LIVE){ setAuto(a=>({...a,photos:(a.photos||0)+imgs.length})); notify(msg); return; }
+      return api("uploadPhotos",{images:imgs}).then(r=>{ setAuto(a=>({...a,...r.autoSocial})); notify(msg); });
+    }).catch(err=>notify(err.message)).finally(()=>setBusy(""));
+  };
+  const clear = () => { if(!LIVE){ setAuto(a=>({...a,photos:0})); return; } api("clearPhotos").then(r=>setAuto(a=>({...a,...r.autoSocial}))).catch(err=>notify(err.message)); };
+  return e("div",{className:"card",style:{marginBottom:16}},
+    e("div",{className:"auto"},
+      e("button",{className:"sw"+(st.settings.enabled?" on":""),role:"switch","aria-checked":!!st.settings.enabled,"aria-label":"Autopilot posting",disabled:busy==="save",onClick:toggle},e("i")),
+      e("div",{className:"grow"}, e("b",null,"Autopilot posting is "+(st.settings.enabled?"on":"off")),
+        e("div",{className:"muted",style:{fontSize:13}}, st.settings.enabled
+          ? (st.settings.mode==="approve" ? CONFIG.aiName+" writes posts on your schedule and waits for your approval." : CONFIG.aiName+" writes and publishes posts on your schedule, even when the app is closed.") + (next ? " Next post: "+fmtWhen(next)+"." : "")
+          : "Let "+CONFIG.aiName+" keep your pages active with regular posts about your projects.")),
+      e("button",{className:"btn ghost sm","aria-expanded":open,onClick:()=>setOpen(!open)},open?"Hide settings":"Settings")),
+    open && e("div",{className:"stack",style:{gap:14,marginTop:16,paddingTop:16,borderTop:"1px solid var(--line-2)"}},
+      e("div",{className:"f"},"When a post is ready", e("div",{className:"seg"}, [["auto","Publish automatically"],["approve","Ask me first"]].map(([v,l])=>e("button",{key:v,className:cfg.mode===v?"on":"",onClick:()=>setCfg({...cfg,mode:v})},l)))),
+      e("div",{className:"form",style:{gridTemplateColumns:"minmax(0,2fr) minmax(0,1fr)"}},
+        e("div",{className:"f"},"Days", e("div",{className:"chips"}, WEEKDAYS.map(([n,l])=>e("button",{key:n,className:"chip"+(cfg.days.indexOf(n)>-1?" on":""),onClick:()=>toggleIn("days",n)},l)))),
+        Field("Time",Inp("ap-time",cfg.time,v=>setCfg({...cfg,time:v}),"time"))),
+      e("div",{className:"f"},"Post to", e("div",{className:"seg"}, PLATFORMS.map(([v,l])=>e("button",{key:v,className:cfg.platform===v?"on":"",onClick:()=>setCfg({...cfg,platform:v})},l)))),
+      e("div",{className:"f"},"Rotate through", e("div",{className:"chips"}, STYLES.map(x=>e("button",{key:x,className:"chip"+(cfg.styles.indexOf(x)>-1?" on":""),onClick:()=>toggleIn("styles",x)},x)))),
+      e("div",{className:"photo-pick",style:{cursor:"default"}},
+        e("div",{style:{width:56,height:56,borderRadius:8,background:"var(--paper)",display:"grid",placeItems:"center",fontFamily:"var(--display)",fontSize:20,fontWeight:600}},st.photos||0),
+        e("div",{style:{flex:1,minWidth:0}}, e("b",null,"Photo library"), e("div",{className:"note"},CONFIG.aiName.split(" ")[0]+" picks a photo for each post"+(/Instagram/.test(cfg.platform)?". Instagram posts need one":"")+".")),
+        e("label",{className:"btn ghost sm",style:{cursor:"pointer"}},busy==="photos"?"Uploading…":"Add photos",e("input",{id:"ap-photos",type:"file",accept:"image/*",multiple:true,onChange:addPhotos})),
+        st.photos ? e("button",{className:"btn ghost sm",onClick:clear},"Clear") : null),
+      e("div",{className:"row",style:{justifyContent:"flex-end"}},
+        e("button",{className:"btn ghost",disabled:!!busy,onClick:runNow},Icon("spark",15),busy==="run"?"Writing…":"Create next post now"),
+        e("button",{className:"btn",disabled:!dirty||!!busy||!cfg.days.length||!cfg.styles.length,onClick:()=>persist(cfg,"Schedule saved")},busy==="save"?"Saving…":"Save schedule"))));
+}
 function Social({ctx}){
   const {db,up,notify} = ctx;
   const [pid,setPid] = useState(db.projects[0] ? db.projects[0].id : "");
@@ -1212,8 +1455,15 @@ function Social({ctx}){
     notify(status==="Posted"?"Posted to "+platform:"Scheduled for "+whenLabel(date)+" at "+time);
   };
   const posts = db.posts.slice().sort((a,b)=>(b.date+(b.time||"")).localeCompare(a.date+(a.time||"")));
+  const approve = x => {
+    if(!LIVE){ up("posts",ps=>ps.map(p=>p.id===x.id?{...p,status:"Posted",date:dOff(0)}:p)); notify("Published to "+x.platform); return; }
+    setPosting("a"+x.id);
+    api("approvePost",{id:x.id}).then(r=>{ up("posts",ps=>ps.map(p=>p.id===x.id?r.post:p)); notify("Published to "+x.platform); }).catch(err=>notify(err.message)).finally(()=>setPosting(""));
+  };
+  const discard = x => { up("posts",ps=>ps.filter(p=>p.id!==x.id)); if(LIVE) api("deletePost",{id:x.id}).catch(err=>notify(err.message)); notify("Draft discarded"); };
   return e("div",{className:"wrap"},
     e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),CONFIG.aiName), e("h1",{className:"t"},"Social posts"), e("div",{className:"sub"},LIVE?"Write with AI, then publish straight to your Facebook Page and Instagram.":"Turn any project into a Facebook or Instagram post in one click."))),
+    e(AutoPostPanel,{ctx}),
     e("div",{className:"grid g-2",style:{alignItems:"start",marginBottom:16}},
       e("div",{className:"card stack",style:{gap:14}},
         e("h2",{className:"t"},"Create a post"),
@@ -1243,15 +1493,28 @@ function Social({ctx}){
         e("div",{style:{width:52,textAlign:"center",flexShrink:0}}, e("div",{style:{fontSize:11,fontWeight:700,color:"var(--muted)",textTransform:"uppercase"}},toDate(x.date).toLocaleDateString("en-US",{month:"short"})), e("div",{style:{fontFamily:"var(--display)",fontSize:22,fontWeight:600,lineHeight:1}},toDate(x.date).getDate())),
         e("div",{className:"grow"}, e("div",{className:"tt"},x.style+" · "+(pr?pr.area:(x.projectName||""))),
           e("div",{className:"mt",style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},(x.caption||"").split("\n")[0]),
-          x.status==="Failed" && x.error ? e("div",{className:"note bad"},x.error) : null,
+          x.error ? e("div",{className:"note"+(x.status==="Failed"?" bad":"")},x.error) : null,
+          x.status==="Draft" ? e("div",{className:"row",style:{marginTop:8}}, e("button",{className:"btn sm",disabled:posting==="a"+x.id,onClick:()=>approve(x)},Icon("send",14),posting==="a"+x.id?"Publishing…":"Approve & publish"), e("button",{className:"btn ghost sm",onClick:()=>discard(x)},"Discard")) : null,
           (x.fbUrl||x.igUrl) ? e("div",{className:"row",style:{marginTop:4}}, x.fbUrl? e("a",{className:"lnk",href:x.fbUrl,target:"_blank",rel:"noopener"},"View on Facebook ↗"):null, x.igUrl? e("a",{className:"lnk",href:x.igUrl,target:"_blank",rel:"noopener"},"View on Instagram ↗"):null) : null),
-        Pill(PLAT_CLS[x.platform]||"mute",x.platform==="Facebook + Instagram"?"FB + IG":x.platform), Pill(x.status==="Posted"?"ok":x.status==="Failed"?"bad":"warn",x.status)); }) : e("div",{className:"empty"},"No posts yet")));
+        x.auto ? Pill("gold","Auto") : null, Pill(PLAT_CLS[x.platform]||"mute",x.platform==="Facebook + Instagram"?"FB + IG":x.platform), Pill(x.status==="Posted"?"ok":x.status==="Failed"?"bad":x.status==="Draft"?"gold":"warn",x.status==="Draft"?"Needs approval":x.status)); }) : e("div",{className:"empty"},"No posts yet")));
 }
 
 /* ═══════════════════════ ASK (AI chat) ═══════════════════════ */
-const SUGGEST = ["What needs my attention today?","Are any jobs over budget?","What's overdue?","How is Hawthorne going?","Which leads need a reply?","Who's my plumber?","Compare the open quotes"];
+const SUGGEST = ["What needs my attention today?","Are any jobs over budget?","Add a $450 tile expense to Hawthorne from Tile Gallery","Move Cabinets installed to Oct 23","Add vendor Blue Ridge Painting, painter, (804) 555-0170","Mark Tile complete done on Linwood","Which leads need a reply?"];
+function ActionCard({msg,ctx,onDone}){
+  const [items] = useState(()=>msg.actions.map(a=>({a,d:describeAction(ctx.db,a)})));
+  const good = items.filter(x=>x.d.ok);
+  const apply = () => { good.forEach(x=>applyAction(ctx.up,x.a)); onDone("applied"); ctx.notify(good.length+" change"+(good.length>1?"s":"")+" applied"); };
+  return e("div",{className:"acard"},
+    e("div",{className:"eyebrow gold",style:{marginBottom:4}},Icon(msg.state==="applied"?"check":"spark",12), msg.state==="applied" ? "Applied" : msg.state==="cancelled" ? "Cancelled" : "Proposed change"+(items.length>1?"s":"")),
+    items.map((x,j)=>e("div",{key:j,className:"aitem"+(x.d.ok&&msg.state!=="cancelled"?"":" off")}, e("span",{className:"aic"},Icon(x.d.ok?(x.d.icon||"check"):"x",13)), e("span",null,x.d.text),
+      x.d.ok && msg.state==="applied" && x.d.go ? e("button",{className:"lnk",onClick:()=>ctx.go(...x.d.go)},"View") : null)),
+    msg.state==="pending" && good.length ? e("div",{className:"row",style:{justifyContent:"flex-end",marginTop:8}},
+      e("button",{className:"btn ghost sm",onClick:()=>onDone("cancelled")},"Cancel"),
+      e("button",{className:"btn sm",onClick:apply},Icon("check",14),good.length>1?"Apply "+good.length+" changes":"Apply")) : null);
+}
 function Ask({ctx}){
-  const [msgs,setMsgs] = useState([{r:"ai",t:[`Hi ${CONFIG.ownerName}, I'm ${CONFIG.aiName}. I can see your projects, budgets, tasks, leads, quotes, and vendors. Ask me anything about the business.`]}]);
+  const [msgs,setMsgs] = useState([{r:"ai",t:[`Hi ${CONFIG.ownerName}, I'm ${CONFIG.aiName}. I can see your projects, budgets, tasks, leads, quotes, and vendors. Ask me anything, or tell me what to change, like "add a $300 permit expense to Brookside" or "move Tile complete to Friday". I'll show you the change before I make it.`]}]);
   const [q,setQ] = useState(""), [busy,setBusy] = useState(false);
   const box = useRef(null);
   useEffect(()=>{ if(box.current) box.current.scrollTop = box.current.scrollHeight; },[msgs,busy]);
@@ -1261,22 +1524,25 @@ function Ask({ctx}){
     if(LIVE){
       const history = msgs.slice(1).map(m=>({role:m.r==="me"?"user":"ai",text:m.t.join("\n")}));
       api("ask",{question:t,history,data:snapshot(ctx.db)})
-        .then(r=>setMsgs(m=>m.concat([{r:"ai",t:toLines(r.answer)}])))
+        .then(r=>{ const lines = toLines(r.answer); const acts = Array.isArray(r.actions) ? r.actions : [];
+          setMsgs(m=>m.concat([{r:"ai",t:lines.length?lines:["Here's what I'll change. Review it, then press Apply."],actions:acts,state:"pending"}])); })
         .catch(err=>setMsgs(m=>m.concat([{r:"ai",t:["I couldn't reach the AI just now. "+err.message]}])))
         .finally(()=>setBusy(false));
       return;
     }
-    setTimeout(()=>{ setMsgs(m=>m.concat([{r:"ai",t:answer(ctx.db,t)}])); setBusy(false); },850);
+    setTimeout(()=>{ const cmd = parseCommand(ctx.db,t);
+      setMsgs(m=>m.concat([cmd ? {r:"ai",t:cmd.answer,actions:cmd.actions,state:"pending"} : {r:"ai",t:answer(ctx.db,t)}])); setBusy(false); },850);
   };
   return e("div",{className:"wrap",style:{paddingBottom:16}},
     e("div",{className:"ph",style:{marginBottom:12}}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),LIVE?"Assistant · live":"Assistant"), e("h1",{className:"t"},"Ask "+CONFIG.aiName))),
     e("div",{className:"card chat"},
       e("div",{className:"msgs",ref:box,"aria-live":"polite"},
-        msgs.map((m,i)=>e("div",{key:i,className:"msg "+m.r}, m.t.map((line,j)=> line.startsWith("• ") ? e("div",{key:j,className:"li"},e("span",null,rich(line.slice(2)))) : e("p",{key:j},rich(line))))),
+        msgs.map((m,i)=>e("div",{key:i,className:"msg "+m.r}, m.t.map((line,j)=> line.startsWith("• ") ? e("div",{key:j,className:"li"},e("span",null,rich(line.slice(2)))) : e("p",{key:j},rich(line))),
+          m.actions && m.actions.length ? e(ActionCard,{key:"ac",msg:m,ctx,onDone:state=>setMsgs(ms=>ms.map((x,k)=>k===i?{...x,state}:x))}) : null)),
         busy && e("div",{className:"msg ai"},e("span",{className:"writing"},e("i"),e("i"),e("i")))),
       e("div",{className:"chips",style:{padding:"10px 0 0"}}, SUGGEST.map(s=>e("button",{key:s,className:"chip",onClick:()=>send(s)},s))),
       e("form",{className:"composer",onSubmit:ev=>{ev.preventDefault();send();}},
-        e("input",{id:"ask-input",value:q,onChange:ev=>setQ(ev.target.value),placeholder:"Ask about budgets, tasks, leads, a project…","aria-label":"Ask a question"}),
+        e("input",{id:"ask-input",value:q,onChange:ev=>setQ(ev.target.value),placeholder:"Ask a question or tell Foreman what to change…","aria-label":"Ask a question"}),
         e("button",{className:"btn",type:"submit",disabled:busy||!q.trim(),"aria-label":"Send"},Icon("send",16)))));
 }
 
@@ -1314,7 +1580,7 @@ function App(){
     const ids = new Set(r.leads.map(l=>l.id));
     if(known.current){ const fresh = r.leads.filter(l=>!known.current.has(l.id)); if(fresh.length) notify("New lead from "+fresh[0].name+(fresh.length>1?" and "+(fresh.length-1)+" more":"")); }
     known.current = ids;
-    setDb(d=>({...d,leads:r.leads,posts:r.posts.concat(d.posts.filter(p=>p.sample)),autopilot:!!r.autopilot}));
+    setDb(d=>({...d,leads:r.leads,posts:r.posts.concat(d.posts.filter(p=>p.sample)),autopilot:!!r.autopilot,autoSocial:r.autoSocial?{...(d.autoSocial||defaultAutoSocial()),...r.autoSocial}:d.autoSocial}));
   };
   const refresh = () => api("getLive").then(applyLive);
   useEffect(()=>{
@@ -1327,6 +1593,12 @@ function App(){
     const t = setInterval(()=>{ refresh().catch(()=>{}); },15000);
     return ()=>clearInterval(t);
   },[authed]);
+  /* Keep the server's copy of project info current, so automated posts know about your jobs */
+  useEffect(()=>{
+    if(!LIVE || !authed) return;
+    const t = setTimeout(()=>{ api("syncProjects",{projects:db.projects.map(p=>projSummary(db,p))}).catch(()=>{}); },2500);
+    return ()=>clearTimeout(t);
+  },[authed, db.projects, db.milestones, db.tasks]);
   /* While the app is open and visible, check Gmail every minute (the server timer covers the rest) */
   useEffect(()=>{
     if(!LIVE || !authed) return;
