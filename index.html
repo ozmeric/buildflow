@@ -1327,6 +1327,19 @@ function App(){
     const t = setInterval(()=>{ refresh().catch(()=>{}); },15000);
     return ()=>clearInterval(t);
   },[authed]);
+  /* While the app is open and visible, check Gmail every minute (the server timer covers the rest) */
+  useEffect(()=>{
+    if(!LIVE || !authed) return;
+    let busy = false;
+    const tick = () => {
+      if(busy || document.hidden) return;
+      busy = true;
+      api("checkGmail").then(r=>{ if(r.imported) return refresh(); }).catch(()=>{}).finally(()=>{ busy = false; });
+    };
+    tick();
+    const t = setInterval(tick,60000);
+    return ()=>clearInterval(t);
+  },[authed]);
   const up = (key,fn) => setDb(d=>({...d,[key]:fn(d[key])}));
   const go = (v,id,tab) => { setView(v); if(id!==undefined) setPid(id); if(tab) setPtab(tab); if(mainRef.current) mainRef.current.scrollTop=0; };
   const ctx = {db,setDb,up,notify,go,view,pid,ptab,setPtab,refresh};
