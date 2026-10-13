@@ -307,6 +307,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 .photo-pick img{width:56px;height:56px;object-fit:cover;border-radius:8px}
 .photo-pick input{display:none}
 .pimg-photo{display:block;width:100%;height:auto;max-width:100%}
+.prow{cursor:pointer;border-radius:8px}
+.prow:hover{background:var(--paper)}
 .ba-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .ba-slot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:4/3;border:1px dashed var(--line);border-radius:10px;cursor:pointer;overflow:hidden;background:var(--paper);color:var(--muted);font-size:12.5px;font-weight:600;text-align:center}
 .ba-slot:hover{border-color:var(--gold)}
@@ -1631,12 +1633,73 @@ function combineBeforeAfter(beforeUrl,afterUrl,square){
     return c.toDataURL("image/jpeg",0.88);
   });
 }
-function AutoPostPanel({ctx}){
+function BASlots({ba,setBa,prefix,notify}){
+  const pick = which => ev => { const f = ev.target.files && ev.target.files[0]; ev.target.value=""; if(!f) return; resizePhoto(f).then(u=>setBa(b=>({...b,[which]:u}))).catch(err=>notify(err.message)); };
+  return e("div",{className:"ba-pick"}, [["before","Before"],["after","After"]].map(([k,l])=>e("label",{key:k,className:"ba-slot"},
+    e("input",{id:prefix+"-"+k,type:"file",accept:"image/*",onChange:pick(k)}),
+    ba[k] ? e("img",{src:ba[k],alt:l+" photo"}) : e(React.Fragment,null,Icon("plus",20),"Add "+l.toLowerCase()+" photo"),
+    ba[k] ? e("span",{className:"tag"+(k==="after"?" after":"")},l.toUpperCase()) : null,
+    ba[k] ? e("button",{className:"x",onClick:ev=>{ev.preventDefault();setBa(b=>({...b,[k]:null}));},"aria-label":"Remove "+l.toLowerCase()+" photo"},Icon("x",14)) : null)));
+}
+function PairModal({ctx,onClose,onAdd}){
+  const {db,notify} = ctx;
+  const [pid,setPid] = useState((db.projects.find(p=>p.status==="Completed")||db.projects[0]||{}).id||"");
+  const [ba,setBa] = useState({before:null,after:null});
+  const [busy,setBusy] = useState(false);
+  const add = () => { setBusy(true); combineBeforeAfter(ba.before,ba.after,true).then(img=>onAdd(img,pid)).then(onClose).catch(err=>{ notify(err.message); setBusy(false); }); };
+  return e(Modal,{title:"Add a before & after pair",onClose},
+    e("p",{className:"muted",style:{marginTop:0}},CONFIG.aiName.split(" ")[0]+" uses pairs for automated Before & After posts. Each pair is saved as one labeled side-by-side image that works on Facebook and Instagram."),
+    Field("Project these photos show",Sel("pair-proj",pid,setPid,db.projects.map(p=>({v:p.id,l:p.name})))),
+    e("div",{style:{marginTop:12}},e(BASlots,{ba,setBa,prefix:"pair",notify})),
+    e("div",{className:"actions"}, e("button",{className:"btn ghost",onClick:onClose},"Cancel"), e("button",{className:"btn",disabled:busy||!(ba.before&&ba.after),onClick:add},busy?"Saving…":"Add pair")));
+}
+const POST_STATUS = s => s==="Posted"?["ok","Posted"]:s==="Failed"?["bad","Failed"]:s==="Draft"?["gold","Needs approval"]:["warn",s];
+function PostModal({ctx,post,onClose,onApprove,onDiscard}){
+  const {db,up,notify} = ctx;
+  const remote = LIVE && post.live;
+  const [img,setImg] = useState(post.image||null);
+  const [loading,setLoading] = useState(!post.image && remote);
+  const [cap,setCap] = useState(post.caption||"");
+  const [busy,setBusy] = useState("");
+  useEffect(()=>{ if(post.image || !remote) return; api("getPostImage",{id:post.id}).then(r=>setImg(r.image||null)).catch(()=>{}).finally(()=>setLoading(false)); },[post.id]);
+  const editable = post.status==="Draft" || post.status==="Scheduled" || post.status==="Failed";
+  const dirty = cap!==(post.caption||"");
+  const pr = projById(db,post.projectId) || {area:post.projectName||"",type:"Full Gut",name:post.projectName||""};
+  const st = POST_STATUS(post.status);
+  const saveCap = () => {
+    if(!dirty) return Promise.resolve();
+    if(!remote){ up("posts",ps=>ps.map(p=>p.id===post.id?{...p,caption:cap}:p)); return Promise.resolve(); }
+    return api("updatePost",{id:post.id,caption:cap}).then(r=>up("posts",ps=>ps.map(p=>p.id===post.id?{...p,caption:r.post.caption}:p)));
+  };
+  const doSave = () => { setBusy("save"); saveCap().then(()=>notify("Caption saved")).catch(err=>notify(err.message)).finally(()=>setBusy("")); };
+  const doApprove = () => { setBusy("approve"); saveCap().then(()=>onApprove({...post,caption:cap})).then(okd=>{ if(okd!==false) onClose(); }).catch(err=>notify(err.message)).finally(()=>setBusy("")); };
+  return e(Modal,{title:post.status==="Draft"?"Review draft":post.status==="Scheduled"?"Scheduled post":post.status==="Failed"?"Post failed":"Published post",onClose},
+    e("div",{className:"row",style:{marginBottom:12}}, post.auto?Pill("gold","Auto"):null, Pill(PLAT_CLS[post.platform]||"mute",post.platform==="Facebook + Instagram"?"FB + IG":post.platform), Pill(st[0],st[1]),
+      e("span",{className:"muted",style:{fontSize:12.5}},(post.style||"")+" · "+fmtD(post.date)+(post.time?" at "+fmtClock(post.time):""))),
+    loading ? e("div",{className:"empty"},"Loading photo…") : e(PostPreview,{p:pr,platform:post.platform==="Instagram"?"Instagram":"Facebook",style:post.style,photo:img,caption:cap}),
+    post.platform==="Facebook + Instagram" ? e("div",{className:"note",style:{textAlign:"center",marginTop:6}},"Instagram gets the same photo and caption, cropped square.") : null,
+    post.error ? e("div",{className:"note"+(post.status==="Failed"?" bad":""),style:{marginTop:10}},post.error) : null,
+    editable ? e("div",{style:{marginTop:14}},Field("Caption",e("textarea",{id:"pm-cap",rows:7,value:cap,onChange:ev=>setCap(ev.target.value)}))) : null,
+    e("div",{className:"actions",style:{justifyContent:"space-between"}},
+      e("div",{className:"row"},
+        post.fbUrl ? e("a",{className:"btn ghost sm",href:post.fbUrl,target:"_blank",rel:"noopener"},"View on Facebook ↗") : null,
+        post.igUrl ? e("a",{className:"btn ghost sm",href:post.igUrl,target:"_blank",rel:"noopener"},"View on Instagram ↗") : null,
+        editable ? e("button",{className:"btn ghost sm",disabled:!!busy,onClick:()=>{ onDiscard(post); onClose(); }},post.status==="Scheduled"?"Delete":"Discard") : null),
+      e("div",{className:"row"},
+        editable && dirty ? e("button",{className:"btn ghost",disabled:!!busy,onClick:doSave},busy==="save"?"Saving…":"Save caption") : null,
+        post.status==="Draft"||post.status==="Failed" ? e("button",{className:"btn",disabled:!!busy,onClick:doApprove},Icon("send",15),busy==="approve"?"Publishing…":post.status==="Failed"?"Try again":"Approve & publish")
+          : e("button",{className:"btn ghost",onClick:onClose},"Close"))));
+}
+function AutoPostPanel({ctx,onCreated}){
   const {db,setDb,up,notify} = ctx;
   const st = db.autoSocial || defaultAutoSocial();
   const [cfg,setCfg] = useState(st.settings);
   const [busy,setBusy] = useState("");
   const [open,setOpen] = useState(!!st.settings.enabled);
+  const [pairOpen,setPairOpen] = useState(false);
+  const bank = st.bank || [];
+  const nPhotos = LIVE ? (st.photos||0) : bank.length;
+  const nPairs = LIVE ? (st.pairs||0) : bank.filter(b=>b.kind==="ba").length;
   const sig = JSON.stringify(st.settings);
   useEffect(()=>{ setCfg(st.settings); },[sig]);
   const dirty = JSON.stringify(cfg)!==sig;
@@ -1652,16 +1715,23 @@ function AutoPostPanel({ctx}){
   const runNow = () => {
     setBusy("run");
     if(LIVE){
-      api("runAutoSocialNow").then(r=>{ up("posts",ps=>[r.post].concat(ps)); setAuto(a=>({...a,...r.autoSocial}));
+      api("runAutoSocialNow").then(r=>{ up("posts",ps=>[r.post].concat(ps)); setAuto(a=>({...a,...r.autoSocial})); if(onCreated) onCreated(r.post.id);
         notify(r.post.status==="Draft"?"Draft ready for your approval":r.post.status==="Posted"?"Published to "+r.post.platform:(r.post.error||"The post failed")); })
         .catch(err=>notify(err.message)).finally(()=>setBusy(""));
       return;
     }
     setTimeout(()=>{
-      const pool = db.projects.filter(p=>p.status!=="Planning"); const i = st.idx||0; const p = pool[i%pool.length];
-      const style = cfg.styles[i%cfg.styles.length] || "Progress Update"; const status = cfg.mode==="approve" ? "Draft" : "Posted";
-      up("posts",ps=>[{id:uid("s"),projectId:p.id,platform:cfg.platform,style,caption:genPost(p,cfg.platform==="Facebook"?"Facebook":"Instagram",style,i,db),date:dOff(0),time:new Date().toTimeString().slice(0,5),status,auto:true}].concat(ps));
-      setAuto(a=>({...a,idx:i+1}));
+      const pool = db.projects.filter(x=>x.status!=="Planning"); const i = st.idx||0; let p = pool[i%pool.length];
+      const pairs = bank.filter(b=>b.kind==="ba"), singles = bank.filter(b=>b.kind!=="ba");
+      let style = cfg.styles[i%cfg.styles.length] || "Progress Update";
+      if(style==="Before & After" && !pairs.length){ const alt = cfg.styles.filter(x=>x!=="Before & After"); style = alt.length ? alt[i%alt.length] : "Progress Update"; }
+      const rank = list => list.slice().sort((a,b)=>((a.projectId===p.id?0:1)-(b.projectId===p.id?0:1)) || ((a.used||0)-(b.used||0)))[0];
+      const photo = style==="Before & After" ? rank(pairs) : rank(singles.length?singles:bank);
+      if(style==="Before & After" && photo){ const owner = pool.find(x=>x.id===photo.projectId); if(owner) p = owner; }
+      const status = cfg.mode==="approve" ? "Draft" : "Posted", id = uid("s");
+      up("posts",ps=>[{id,projectId:p.id,platform:cfg.platform,style,caption:genPost(p,cfg.platform==="Facebook"?"Facebook":"Instagram",style,i,db),date:dOff(0),time:new Date().toTimeString().slice(0,5),status,auto:true,image:photo?photo.image:null}].concat(ps));
+      setAuto(a=>({...a,idx:i+1,bank:(a.bank||[]).map(b=>photo&&b.id===photo.id?{...b,used:(b.used||0)+1}:b)}));
+      if(onCreated) onCreated(id);
       notify(status==="Draft"?"Draft ready for your approval":"Posted to "+cfg.platform); setBusy("");
     },1100);
   };
@@ -1670,11 +1740,15 @@ function AutoPostPanel({ctx}){
     setBusy("photos");
     Promise.all(files.map(resizePhoto)).then(imgs=>{
       const msg = imgs.length+" photo"+(imgs.length>1?"s":"")+" added to the library";
-      if(!LIVE){ setAuto(a=>({...a,photos:(a.photos||0)+imgs.length})); notify(msg); return; }
+      if(!LIVE){ setAuto(a=>({...a,bank:(a.bank||[]).concat(imgs.map(im=>({id:uid("ph"),image:im,projectId:"",kind:"",used:0}))).slice(-12)})); notify(msg); return; }
       return api("uploadPhotos",{images:imgs}).then(r=>{ setAuto(a=>({...a,...r.autoSocial})); notify(msg); });
     }).catch(err=>notify(err.message)).finally(()=>setBusy(""));
   };
-  const clear = () => { if(!LIVE){ setAuto(a=>({...a,photos:0})); return; } api("clearPhotos").then(r=>setAuto(a=>({...a,...r.autoSocial}))).catch(err=>notify(err.message)); };
+  const addPair = (img,projectId) => {
+    if(!LIVE){ setAuto(a=>({...a,bank:(a.bank||[]).concat([{id:uid("ph"),image:img,projectId,kind:"ba",used:0}]).slice(-12)})); notify("Before & after pair added"); return Promise.resolve(); }
+    return api("uploadPhotos",{images:[img],projectId,kind:"ba"}).then(r=>{ setAuto(a=>({...a,...r.autoSocial})); notify("Before & after pair added"); });
+  };
+  const clear = () => { if(!LIVE){ setAuto(a=>({...a,bank:[]})); return; } api("clearPhotos").then(r=>setAuto(a=>({...a,...r.autoSocial}))).catch(err=>notify(err.message)); };
   return e("div",{className:"card",style:{marginBottom:16}},
     e("div",{className:"auto"},
       e("button",{className:"sw"+(st.settings.enabled?" on":""),role:"switch","aria-checked":!!st.settings.enabled,"aria-label":"Autopilot posting",disabled:busy==="save",onClick:toggle},e("i")),
@@ -1690,11 +1764,15 @@ function AutoPostPanel({ctx}){
         Field("Time",Inp("ap-time",cfg.time,v=>setCfg({...cfg,time:v}),"time"))),
       e("div",{className:"f"},"Post to", e("div",{className:"seg"}, PLATFORMS.map(([v,l])=>e("button",{key:v,className:cfg.platform===v?"on":"",onClick:()=>setCfg({...cfg,platform:v})},l)))),
       e("div",{className:"f"},"Rotate through", e("div",{className:"chips"}, STYLES.map(x=>e("button",{key:x,className:"chip"+(cfg.styles.indexOf(x)>-1?" on":""),onClick:()=>toggleIn("styles",x)},x)))),
-      e("div",{className:"photo-pick",style:{cursor:"default"}},
-        e("div",{style:{width:56,height:56,borderRadius:8,background:"var(--paper)",display:"grid",placeItems:"center",fontFamily:"var(--display)",fontSize:20,fontWeight:600}},st.photos||0),
-        e("div",{style:{flex:1,minWidth:0}}, e("b",null,"Photo library"), e("div",{className:"note"},CONFIG.aiName.split(" ")[0]+" picks a photo for each post"+(/Instagram/.test(cfg.platform)?". Instagram posts need one":"")+".")),
-        e("label",{className:"btn ghost sm",style:{cursor:"pointer"}},busy==="photos"?"Uploading…":"Add photos",e("input",{id:"ap-photos",type:"file",accept:"image/*",multiple:true,onChange:addPhotos})),
-        st.photos ? e("button",{className:"btn ghost sm",onClick:clear},"Clear") : null),
+      e("div",{className:"photo-pick",style:{cursor:"default",flexWrap:"wrap"}},
+        e("div",{style:{width:56,height:56,borderRadius:8,background:"var(--paper)",display:"grid",placeItems:"center",fontFamily:"var(--display)",fontSize:20,fontWeight:600}},nPhotos),
+        e("div",{style:{flex:"1 1 200px",minWidth:0}}, e("b",null,"Photo library"),
+          e("div",{className:"note"}, nPhotos+" photo"+(nPhotos===1?"":"s")+", including "+nPairs+" before & after pair"+(nPairs===1?"":"s")+". "+(cfg.styles.indexOf("Before & After")>-1 && !nPairs ? "Add a pair to include Before & After posts." : CONFIG.aiName.split(" ")[0]+" picks a photo for each post"+(/Instagram/.test(cfg.platform)?"; Instagram posts need one.":".")))),
+        e("div",{className:"row"},
+          e("label",{className:"btn ghost sm",style:{cursor:"pointer"}},busy==="photos"?"Uploading…":"Add photos",e("input",{id:"ap-photos",type:"file",accept:"image/*",multiple:true,onChange:addPhotos})),
+          e("button",{className:"btn ghost sm",onClick:()=>setPairOpen(true)},"Add before & after pair"),
+          nPhotos ? e("button",{className:"btn ghost sm",onClick:clear},"Clear") : null)),
+      pairOpen && e(PairModal,{ctx,onClose:()=>setPairOpen(false),onAdd:addPair}),
       e("div",{className:"row",style:{justifyContent:"flex-end"}},
         e("button",{className:"btn ghost",disabled:!!busy,onClick:runNow},Icon("spark",15),busy==="run"?"Writing…":"Create next post now"),
         e("button",{className:"btn",disabled:!dirty||!!busy||!cfg.days.length||!cfg.styles.length,onClick:()=>persist(cfg,"Schedule saved")},busy==="save"?"Saving…":"Save schedule"))));
@@ -1711,6 +1789,7 @@ function Social({ctx}){
   const [photo,setPhoto] = useState(null);
   const [ba,setBa] = useState({before:null,after:null});
   const [baImg,setBaImg] = useState(null);
+  const [view,setView] = useState(null);
   const [date,setDate] = useState(dOff(1)), [time,setTime] = useState("10:00");
   const p = projById(db,pid) || db.projects[0];
   const gen = v => {
@@ -1743,19 +1822,22 @@ function Social({ctx}){
         .catch(err=>notify(err.message)).finally(()=>setPosting(""));
       return;
     }
-    up("posts",ps=>ps.concat([{id:uid("s"),projectId:p.id,platform,style,caption,date:status==="Posted"?dOff(0):date,time,status}])); setCaption(""); clearPhotos();
+    up("posts",ps=>ps.concat([{id:uid("s"),projectId:p.id,platform,style,caption,date:status==="Posted"?dOff(0):date,time,status,image:postPhoto||null}])); setCaption(""); clearPhotos();
     notify(status==="Posted"?"Posted to "+platform:"Scheduled for "+whenLabel(date)+" at "+time);
   };
   const posts = db.posts.slice().sort((a,b)=>(b.date+(b.time||"")).localeCompare(a.date+(a.time||"")));
   const approve = x => {
-    if(!LIVE){ up("posts",ps=>ps.map(p=>p.id===x.id?{...p,status:"Posted",date:dOff(0)}:p)); notify("Published to "+x.platform); return; }
+    if(!(LIVE && x.live)){ up("posts",ps=>ps.map(p=>p.id===x.id?{...p,caption:x.caption,status:"Posted",date:dOff(0),error:""}:p)); notify("Published to "+x.platform); return Promise.resolve(true); }
     setPosting("a"+x.id);
-    api("approvePost",{id:x.id}).then(r=>{ up("posts",ps=>ps.map(p=>p.id===x.id?r.post:p)); notify("Published to "+x.platform); }).catch(err=>notify(err.message)).finally(()=>setPosting(""));
+    return api("approvePost",{id:x.id}).then(r=>{ up("posts",ps=>ps.map(p=>p.id===x.id?r.post:p)); notify("Published to "+x.platform); return true; })
+      .catch(err=>{ notify(err.message); return false; }).finally(()=>setPosting(""));
   };
-  const discard = x => { up("posts",ps=>ps.filter(p=>p.id!==x.id)); if(LIVE) api("deletePost",{id:x.id}).catch(err=>notify(err.message)); notify("Draft discarded"); };
+  const discard = x => { up("posts",ps=>ps.filter(p=>p.id!==x.id)); if(LIVE && x.live) api("deletePost",{id:x.id}).catch(err=>notify(err.message)); notify(x.status==="Scheduled"?"Scheduled post deleted":"Draft discarded"); };
+  const viewPost = view && db.posts.find(p=>p.id===view);
   return e("div",{className:"wrap"},
     e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),CONFIG.aiName), e("h1",{className:"t"},"Social posts"), e("div",{className:"sub"},LIVE?"Write with AI, then publish straight to your Facebook Page and Instagram.":"Turn any project into a Facebook or Instagram post in one click."))),
-    e(AutoPostPanel,{ctx}),
+    e(AutoPostPanel,{ctx,onCreated:id=>setView(id)}),
+    viewPost && e(PostModal,{key:viewPost.id,ctx,post:viewPost,onClose:()=>setView(null),onApprove:approve,onDiscard:discard}),
     e("div",{className:"grid g-2",style:{alignItems:"start",marginBottom:16}},
       e("div",{className:"card stack",style:{gap:14}},
         e("h2",{className:"t"},"Create a post"),
@@ -1763,11 +1845,7 @@ function Social({ctx}){
         e("div",{className:"f"},"Platform", e("div",{className:"seg"}, PLATFORMS.map(([v,l])=>e("button",{key:v,className:platform===v?"on":"",onClick:()=>{setPlatform(v);setCaption("");}},l)))),
         e("div",{className:"f"},"Post type", e("div",{className:"chips"}, STYLES.map(x=>e("button",{key:x,className:"chip"+(style===x?" on":""),onClick:()=>{setStyle(x);setCaption("");}},x)))),
         isBA ? e("div",{className:"f"},"Before & after photos",
-          e("div",{className:"ba-pick"}, [["before","Before"],["after","After"]].map(([k,l])=>e("label",{key:k,className:"ba-slot"},
-            e("input",{id:"sp-"+k,type:"file",accept:"image/*",onChange:pickBA(k)}),
-            ba[k] ? e("img",{src:ba[k],alt:l+" photo"}) : e(React.Fragment,null,Icon("plus",20),"Add "+l.toLowerCase()+" photo"),
-            ba[k] ? e("span",{className:"tag"+(k==="after"?" after":"")},l.toUpperCase()) : null,
-            ba[k] ? e("button",{className:"x",onClick:ev=>{ev.preventDefault();setBa(b=>({...b,[k]:null}));},"aria-label":"Remove "+l.toLowerCase()+" photo"},Icon("x",14)) : null))),
+          e(BASlots,{ba,setBa,prefix:"sp",notify}),
           e("div",{className:"note",style:{textTransform:"none",letterSpacing:0,fontWeight:400}}, ba.before&&ba.after ? "Combined into one side-by-side image"+(squareOut?" (square for Instagram).":".") : "Add both and "+CONFIG.aiName.split(" ")[0]+" combines them into one side-by-side image.")) :
         e("label",{className:"photo-pick"},
           e("input",{id:"sp-photo",type:"file",accept:"image/*",onChange:pickPhoto}),
@@ -1788,13 +1866,13 @@ function Social({ctx}){
         e(PostPreview,{p,platform:platform==="Instagram"?"Instagram":"Facebook",style,photo:postPhoto,caption: caption || (busy?"…":"Press Write it for me and the caption appears here.")}))),
     e("div",{className:"card"},
       e("div",{className:"card-h"},e("h2",{className:"t"},"Content calendar"),e("span",{className:"muted"},posts.filter(x=>x.status==="Scheduled").length+" scheduled")),
-      posts.length ? posts.map(x=>{ const pr=projById(db,x.projectId); return e("div",{className:"lrow",key:x.id},
+      posts.length ? posts.map(x=>{ const pr=projById(db,x.projectId); return e("div",{className:"lrow prow",key:x.id,role:"button",tabIndex:0,title:"Open post",onClick:()=>setView(x.id),onKeyDown:ev=>{ if(ev.key==="Enter") setView(x.id); }},
         e("div",{style:{width:52,textAlign:"center",flexShrink:0}}, e("div",{style:{fontSize:11,fontWeight:700,color:"var(--muted)",textTransform:"uppercase"}},toDate(x.date).toLocaleDateString("en-US",{month:"short"})), e("div",{style:{fontFamily:"var(--display)",fontSize:22,fontWeight:600,lineHeight:1}},toDate(x.date).getDate())),
         e("div",{className:"grow"}, e("div",{className:"tt"},x.style+" · "+(pr?pr.area:(x.projectName||""))),
           e("div",{className:"mt",style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},(x.caption||"").split("\n")[0]),
           x.error ? e("div",{className:"note"+(x.status==="Failed"?" bad":"")},x.error) : null,
-          x.status==="Draft" ? e("div",{className:"row",style:{marginTop:8}}, e("button",{className:"btn sm",disabled:posting==="a"+x.id,onClick:()=>approve(x)},Icon("send",14),posting==="a"+x.id?"Publishing…":"Approve & publish"), e("button",{className:"btn ghost sm",onClick:()=>discard(x)},"Discard")) : null,
-          (x.fbUrl||x.igUrl) ? e("div",{className:"row",style:{marginTop:4}}, x.fbUrl? e("a",{className:"lnk",href:x.fbUrl,target:"_blank",rel:"noopener"},"View on Facebook ↗"):null, x.igUrl? e("a",{className:"lnk",href:x.igUrl,target:"_blank",rel:"noopener"},"View on Instagram ↗"):null) : null),
+          x.status==="Draft" ? e("div",{className:"row",style:{marginTop:8}}, e("button",{className:"btn ghost sm",onClick:ev=>{ev.stopPropagation();setView(x.id);}},"Preview"), e("button",{className:"btn sm",disabled:posting==="a"+x.id,onClick:ev=>{ev.stopPropagation();approve(x);}},Icon("send",14),posting==="a"+x.id?"Publishing…":"Approve & publish"), e("button",{className:"btn ghost sm",onClick:ev=>{ev.stopPropagation();discard(x);}},"Discard")) : null,
+          (x.fbUrl||x.igUrl) ? e("div",{className:"row",style:{marginTop:4}}, x.fbUrl? e("a",{className:"lnk",href:x.fbUrl,target:"_blank",rel:"noopener",onClick:ev=>ev.stopPropagation()},"View on Facebook ↗"):null, x.igUrl? e("a",{className:"lnk",href:x.igUrl,target:"_blank",rel:"noopener",onClick:ev=>ev.stopPropagation()},"View on Instagram ↗"):null) : null),
         x.auto ? Pill("gold","Auto") : null, Pill(PLAT_CLS[x.platform]||"mute",x.platform==="Facebook + Instagram"?"FB + IG":x.platform), Pill(x.status==="Posted"?"ok":x.status==="Failed"?"bad":x.status==="Draft"?"gold":"warn",x.status==="Draft"?"Needs approval":x.status)); }) : e("div",{className:"empty"},"No posts yet")));
 }
 
