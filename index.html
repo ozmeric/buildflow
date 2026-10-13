@@ -307,11 +307,14 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 .photo-pick img{width:56px;height:56px;object-fit:cover;border-radius:8px}
 .photo-pick input{display:none}
 .pimg-photo{display:block;width:100%;height:auto;max-width:100%}
+.ai-picks{display:flex;gap:8px;align-items:flex-start;background:var(--gold-soft);border:1px solid #EEDDA6;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;color:var(--ink)}
+.ai-picks svg{color:var(--gold-ink);flex-shrink:0;margin-top:3px}
 .prow{cursor:pointer;border-radius:8px}
 .prow:hover{background:var(--paper)}
 .ba-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .ba-slot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:4/3;border:1px dashed var(--line);border-radius:10px;cursor:pointer;overflow:hidden;background:var(--paper);color:var(--muted);font-size:12.5px;font-weight:600;text-align:center}
 .ba-slot:hover{border-color:var(--gold)}
+.ba-slot{text-transform:none;letter-spacing:0}
 .ba-slot input{display:none}
 .ba-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .ba-slot .tag{position:absolute;left:8px;bottom:8px;font-size:10.5px;font-weight:700;letter-spacing:.12em;padding:4px 8px;border-radius:5px;background:rgba(11,27,51,.85);color:#fff}
@@ -773,7 +776,40 @@ const rich = s => s.split("**").map((part,i)=> i%2 ? e("b",{key:i},part) : part)
 
 /* ── Automated social posting (settings live on the server in live mode) ── */
 const WEEKDAYS = [[1,"Mon"],[2,"Tue"],[3,"Wed"],[4,"Thu"],[5,"Fri"],[6,"Sat"],[7,"Sun"]];
-function defaultAutoSocial(){ return {settings:{enabled:false,mode:"approve",days:[2,4],time:"10:00",platform:"Facebook",styles:["Progress Update","Before & After","Tip of the Week"]},next:0,photos:0,idx:0}; }
+function defaultAutoSocial(){ return {settings:{enabled:false,mode:"approve",schedule:"smart",perWeek:3,startDate:"",days:[2,4],time:"10:00",platform:"Facebook",styles:["Progress Update","Before & After","Tip of the Week"]},next:0,photos:0,idx:0}; }
+/* Best times for home-service pages, same table the server uses (weekday 1=Mon … 7=Sun) */
+const BEST_SLOTS = {
+  "Facebook":             [[2,"09:30"],[4,"09:30"],[6,"09:00"],[3,"12:00"],[1,"11:00"],[5,"13:00"],[7,"18:00"]],
+  "Instagram":            [[2,"11:00"],[3,"11:00"],[5,"11:00"],[4,"19:00"],[6,"10:00"],[1,"12:00"],[7,"19:00"]],
+  "Facebook + Instagram": [[2,"10:00"],[4,"10:00"],[6,"09:30"],[3,"11:30"],[1,"11:00"],[5,"12:00"],[7,"18:00"]],
+};
+const WD_NAME = ["","Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const slotsForCfg = cfg => (cfg.schedule==="fixed" ? (cfg.days||[]).map(d=>[d,cfg.time]) : (BEST_SLOTS[cfg.platform]||BEST_SLOTS.Facebook).slice(0,cfg.perWeek||3)).slice().sort((a,b)=>a[0]-b[0]);
+function planSlotsLocal(cfg,from,until){
+  if(cfg.startDate){ const s0 = new Date(cfg.startDate+"T00:00:00").getTime(); if(s0>from) from = s0; }
+  const pat = slotsForCfg(cfg), out = [];
+  for(let d=0; d<21; d++){
+    const day = new Date(from+d*DAY), wd = day.getDay()===0?7:day.getDay();
+    pat.filter(x=>x[0]===wd).forEach(x=>{ const [h,m]=x[1].split(":").map(Number); const at=new Date(day); at.setHours(h,m,0,0); const t=at.getTime(); if(t>=from && t<until && out.indexOf(t)===-1) out.push(t); });
+  }
+  return out.sort((a,b)=>a-b);
+}
+const postTime = p => new Date(p.date+"T"+(p.time||"00:00")+":00").getTime();
+const isUpcomingAuto = p => p.auto && (p.status==="Draft"||p.status==="Scheduled") && postTime(p) > Date.now();
+/* Demo mode: write one automated post locally (live mode does this on the server) */
+function makeLocalAutoPost(db,cfg,i,bank,when){
+  const pool = db.projects.filter(x=>x.status!=="Planning"); let p = pool[i%pool.length];
+  const pairs = bank.filter(b=>b.kind==="ba"), singles = bank.filter(b=>b.kind!=="ba");
+  let style = cfg.styles[i%cfg.styles.length] || "Progress Update";
+  if(style==="Before & After" && !pairs.length){ const alt = cfg.styles.filter(x=>x!=="Before & After"); style = alt.length ? alt[i%alt.length] : "Progress Update"; }
+  const rank = list => list.slice().sort((a,b)=>((a.projectId===p.id?0:1)-(b.projectId===p.id?0:1)) || ((a.used||0)-(b.used||0)))[0];
+  const photo = style==="Before & After" ? rank(pairs) : rank(singles.length?singles:bank);
+  if(style==="Before & After" && photo){ const owner = pool.find(x=>x.id===photo.projectId); if(owner) p = owner; }
+  if(photo) photo.used = (photo.used||0)+1;
+  const at = when ? new Date(when) : new Date();
+  const status = cfg.mode==="approve" ? "Draft" : when ? "Scheduled" : "Posted";
+  return {id:uid("s"),projectId:p.id,platform:cfg.platform,style,caption:genPost(p,cfg.platform==="Facebook"?"Facebook":"Instagram",style,i,db),date:iso(at),time:pad2(at.getHours())+":"+pad2(at.getMinutes()),status,auto:true,image:photo?photo.image:null};
+}
 function nextRunLocal(cfg){
   if(!cfg.days || !cfg.days.length) return 0;
   const [hh,mm] = (cfg.time||"10:00").split(":").map(Number);
@@ -1687,30 +1723,56 @@ function PostModal({ctx,post,onClose,onApprove,onDiscard}){
         editable ? e("button",{className:"btn ghost sm",disabled:!!busy,onClick:()=>{ onDiscard(post); onClose(); }},post.status==="Scheduled"?"Delete":"Discard") : null),
       e("div",{className:"row"},
         editable && dirty ? e("button",{className:"btn ghost",disabled:!!busy,onClick:doSave},busy==="save"?"Saving…":"Save caption") : null,
-        post.status==="Draft"||post.status==="Failed" ? e("button",{className:"btn",disabled:!!busy,onClick:doApprove},Icon("send",15),busy==="approve"?"Publishing…":post.status==="Failed"?"Try again":"Approve & publish")
+        post.status==="Draft"||post.status==="Failed" ? e("button",{className:"btn",disabled:!!busy,onClick:doApprove},Icon(postTime(post)>Date.now()+60000?"check":"send",15),busy==="approve"?"Saving…":post.status==="Failed"?"Try again":postTime(post)>Date.now()+60000?"Approve for "+fmtD(post.date)+" "+fmtClock(post.time||"10:00"):"Approve & publish now")
           : e("button",{className:"btn ghost",onClick:onClose},"Close"))));
 }
 function AutoPostPanel({ctx,onCreated}){
-  const {db,setDb,up,notify} = ctx;
+  const {db,setDb,up,notify,refresh} = ctx;
   const st = db.autoSocial || defaultAutoSocial();
-  const [cfg,setCfg] = useState(st.settings);
+  const base = {...defaultAutoSocial().settings, ...st.settings};
+  const [cfg,setCfg] = useState(base);
   const [busy,setBusy] = useState("");
-  const [open,setOpen] = useState(!!st.settings.enabled);
+  const [open,setOpen] = useState(!!base.enabled);
   const [pairOpen,setPairOpen] = useState(false);
   const bank = st.bank || [];
   const nPhotos = LIVE ? (st.photos||0) : bank.length;
   const nPairs = LIVE ? (st.pairs||0) : bank.filter(b=>b.kind==="ba").length;
-  const sig = JSON.stringify(st.settings);
-  useEffect(()=>{ setCfg(st.settings); },[sig]);
+  const sig = JSON.stringify(base);
+  useEffect(()=>{ setCfg(base); },[sig]);
   const dirty = JSON.stringify(cfg)!==sig;
-  const next = LIVE ? st.next : (st.settings.enabled ? nextRunLocal(st.settings) : 0);
+  const upcoming = db.posts.filter(isUpcomingAuto).sort((a,b)=>postTime(a)-postTime(b));
   const setAuto = fn => setDb(d=>({...d,autoSocial:fn(d.autoSocial||defaultAutoSocial())}));
-  const persist = (settings,msg) => {
-    if(!LIVE){ setAuto(a=>({...a,settings})); if(msg) notify(msg); return; }
+  const picks = slotsForCfg(cfg).map(x=>WD_NAME[x[0]]+" "+fmtClock(x[1]));
+  const valid = cfg.styles.length && (cfg.schedule==="smart" || cfg.days.length);
+  /* Save settings; when on, (re)plan the next 2 weeks */
+  const persist = (settings,replan) => {
     setBusy("save");
-    api("saveAutoSocial",{settings}).then(r=>{ setAuto(a=>({...a,...r.autoSocial})); if(msg) notify(msg); }).catch(err=>notify(err.message)).finally(()=>setBusy(""));
+    if(!LIVE){
+      setTimeout(()=>{
+        setDb(d=>{
+          const a = {...(d.autoSocial||defaultAutoSocial())}, bk = (a.bank||[]).map(x=>({...x}));
+          let posts = d.posts;
+          const removed = posts.filter(isUpcomingAuto).length;
+          if(replan || !settings.enabled) posts = posts.filter(p=>!isUpcomingAuto(p));
+          let made = 0, i = a.idx||0;
+          if(settings.enabled){
+            const taken = {}; posts.filter(isUpcomingAuto).forEach(p=>taken[p.date]=1);
+            planSlotsLocal(settings,Date.now()+30*60000,Date.now()+14*DAY).filter(t=>!taken[iso(new Date(t))]).slice(0,6).forEach(t=>{ posts = posts.concat([makeLocalAutoPost(d,settings,i,bk,t)]); i++; made++; });
+          }
+          setTimeout(()=>notify(!settings.enabled ? "Autopilot posting off"+(removed?". "+removed+" planned post"+(removed>1?"s":"")+" removed.":".") : made ? made+" post"+(made>1?"s":"")+" planned. Check the content calendar." : "Schedule saved"),0);
+          return {...d,posts,autoSocial:{...a,settings,idx:i,bank:bk}};
+        });
+        setBusy("");
+      },900);
+      return;
+    }
+    api("saveAutoSocial",{settings,replan:!!replan}).then(r=>{
+      setAuto(a=>({...a,...r.autoSocial}));
+      notify(!settings.enabled ? "Autopilot posting off"+(r.removed?". "+r.removed+" planned post"+(r.removed>1?"s":"")+" removed.":".") : r.created ? r.created+" post"+(r.created>1?"s":"")+" planned. Check the content calendar." : "Schedule saved");
+      return refresh();
+    }).catch(err=>notify(err.message)).finally(()=>setBusy(""));
   };
-  const toggle = () => { const s2 = {...cfg,enabled:!st.settings.enabled}; setCfg(s2); setOpen(true); persist(s2, s2.enabled?"Autopilot posting on":"Autopilot posting off"); };
+  const toggle = () => { const s2 = {...cfg,enabled:!base.enabled}; setCfg(s2); setOpen(true); persist(s2,false); };
   const toggleIn = (key,val) => setCfg(c=>{ const arr=c[key]||[]; const nx = arr.indexOf(val)>-1 ? arr.filter(x=>x!==val) : arr.concat([val]); return {...c,[key]: key==="days" ? nx.sort((a,b)=>a-b) : nx}; });
   const runNow = () => {
     setBusy("run");
@@ -1721,18 +1783,12 @@ function AutoPostPanel({ctx,onCreated}){
       return;
     }
     setTimeout(()=>{
-      const pool = db.projects.filter(x=>x.status!=="Planning"); const i = st.idx||0; let p = pool[i%pool.length];
-      const pairs = bank.filter(b=>b.kind==="ba"), singles = bank.filter(b=>b.kind!=="ba");
-      let style = cfg.styles[i%cfg.styles.length] || "Progress Update";
-      if(style==="Before & After" && !pairs.length){ const alt = cfg.styles.filter(x=>x!=="Before & After"); style = alt.length ? alt[i%alt.length] : "Progress Update"; }
-      const rank = list => list.slice().sort((a,b)=>((a.projectId===p.id?0:1)-(b.projectId===p.id?0:1)) || ((a.used||0)-(b.used||0)))[0];
-      const photo = style==="Before & After" ? rank(pairs) : rank(singles.length?singles:bank);
-      if(style==="Before & After" && photo){ const owner = pool.find(x=>x.id===photo.projectId); if(owner) p = owner; }
-      const status = cfg.mode==="approve" ? "Draft" : "Posted", id = uid("s");
-      up("posts",ps=>[{id,projectId:p.id,platform:cfg.platform,style,caption:genPost(p,cfg.platform==="Facebook"?"Facebook":"Instagram",style,i,db),date:dOff(0),time:new Date().toTimeString().slice(0,5),status,auto:true,image:photo?photo.image:null}].concat(ps));
-      setAuto(a=>({...a,idx:i+1,bank:(a.bank||[]).map(b=>photo&&b.id===photo.id?{...b,used:(b.used||0)+1}:b)}));
-      if(onCreated) onCreated(id);
-      notify(status==="Draft"?"Draft ready for your approval":"Posted to "+cfg.platform); setBusy("");
+      const bk = bank.map(x=>({...x})), i = st.idx||0;
+      const post = makeLocalAutoPost(db,cfg,i,bk,null);
+      up("posts",ps=>[post].concat(ps));
+      setAuto(a=>({...a,idx:i+1,bank:bk}));
+      if(onCreated) onCreated(post.id);
+      notify(post.status==="Draft"?"Draft ready for your approval":"Posted to "+cfg.platform); setBusy("");
     },1100);
   };
   const addPhotos = ev => {
@@ -1749,33 +1805,45 @@ function AutoPostPanel({ctx,onCreated}){
     return api("uploadPhotos",{images:[img],projectId,kind:"ba"}).then(r=>{ setAuto(a=>({...a,...r.autoSocial})); notify("Before & after pair added"); });
   };
   const clear = () => { if(!LIVE){ setAuto(a=>({...a,bank:[]})); return; } api("clearPhotos").then(r=>setAuto(a=>({...a,...r.autoSocial}))).catch(err=>notify(err.message)); };
+  const nextP = upcoming[0], lastP = upcoming[upcoming.length-1];
+  const nDraft = upcoming.filter(p=>p.status==="Draft").length;
   return e("div",{className:"card",style:{marginBottom:16}},
     e("div",{className:"auto"},
-      e("button",{className:"sw"+(st.settings.enabled?" on":""),role:"switch","aria-checked":!!st.settings.enabled,"aria-label":"Autopilot posting",disabled:busy==="save",onClick:toggle},e("i")),
-      e("div",{className:"grow"}, e("b",null,"Autopilot posting is "+(st.settings.enabled?"on":"off")),
-        e("div",{className:"muted",style:{fontSize:13}}, st.settings.enabled
-          ? (st.settings.mode==="approve" ? CONFIG.aiName+" writes posts on your schedule and waits for your approval." : CONFIG.aiName+" writes and publishes posts on your schedule, even when the app is closed.") + (next ? " Next post: "+fmtWhen(next)+"." : "")
-          : "Let "+CONFIG.aiName+" keep your pages active with regular posts about your projects.")),
+      e("button",{className:"sw"+(base.enabled?" on":""),role:"switch","aria-checked":!!base.enabled,"aria-label":"Autopilot posting",disabled:busy==="save",onClick:toggle},e("i")),
+      e("div",{className:"grow"}, e("b",null,"Autopilot posting is "+(base.enabled?"on":"off")),
+        e("div",{className:"muted",style:{fontSize:13}}, base.enabled
+          ? (upcoming.length ? upcoming.length+" post"+(upcoming.length>1?"s":"")+" planned through "+fmtD(lastP.date)+". Next: "+fmtWhen(postTime(nextP))+"."+(nDraft? " "+nDraft+" waiting for your approval." : "") : "Planning posts…")
+          : "Let "+CONFIG.aiName+" plan, write and schedule posts about your projects, with your photos.")),
       e("button",{className:"btn ghost sm","aria-expanded":open,onClick:()=>setOpen(!open)},open?"Hide settings":"Settings")),
     open && e("div",{className:"stack",style:{gap:14,marginTop:16,paddingTop:16,borderTop:"1px solid var(--line-2)"}},
-      e("div",{className:"f"},"When a post is ready", e("div",{className:"seg"}, [["auto","Publish automatically"],["approve","Ask me first"]].map(([v,l])=>e("button",{key:v,className:cfg.mode===v?"on":"",onClick:()=>setCfg({...cfg,mode:v})},l)))),
-      e("div",{className:"form",style:{gridTemplateColumns:"minmax(0,2fr) minmax(0,1fr)"}},
-        e("div",{className:"f"},"Days", e("div",{className:"chips"}, WEEKDAYS.map(([n,l])=>e("button",{key:n,className:"chip"+(cfg.days.indexOf(n)>-1?" on":""),onClick:()=>toggleIn("days",n)},l)))),
-        Field("Time",Inp("ap-time",cfg.time,v=>setCfg({...cfg,time:v}),"time"))),
+      e("div",{className:"f"},"Schedule", e("div",{className:"seg"}, [["smart",CONFIG.aiName.split(" ")[0]+" picks the best times"],["fixed","I'll choose days & time"]].map(([v,l])=>e("button",{key:v,className:cfg.schedule===v?"on":"",onClick:()=>setCfg({...cfg,schedule:v})},l)))),
+      cfg.schedule==="smart"
+        ? e("div",{className:"form",style:{gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)"}},
+            Field("Posts per week",Sel("ap-per",String(cfg.perWeek),v=>setCfg({...cfg,perWeek:Number(v)}),[1,2,3,4,5,6,7].map(n=>({v:String(n),l:n+" post"+(n>1?"s":"")})))),
+            Field("Start date",e("input",{id:"ap-start",type:"date",min:iso(T0),value:cfg.startDate||iso(T0),onChange:ev=>setCfg({...cfg,startDate:ev.target.value})})),
+            e("div",{className:"full ai-picks"}, Icon("spark",14), e("span",null, e("b",null,CONFIG.aiName.split(" ")[0]+"'s picks for "+(cfg.platform==="Facebook + Instagram"?"Facebook and Instagram":cfg.platform)+": "), picks.join(" · "), ". Based on when local home-service pages typically get the most engagement, so posts land while homeowners are planning projects.")))
+        : e("div",{className:"form",style:{gridTemplateColumns:"minmax(0,2fr) minmax(0,1fr)"}},
+            e("div",{className:"f full"},"Days", e("div",{className:"chips"}, WEEKDAYS.map(([n,l])=>e("button",{key:n,className:"chip"+(cfg.days.indexOf(n)>-1?" on":""),onClick:()=>toggleIn("days",n)},l)))),
+            Field("Time",Inp("ap-time",cfg.time,v=>setCfg({...cfg,time:v}),"time")),
+            Field("Start date",e("input",{id:"ap-start2",type:"date",min:iso(T0),value:cfg.startDate||iso(T0),onChange:ev=>setCfg({...cfg,startDate:ev.target.value})}))),
+      e("div",{className:"f"},"Before posting", e("div",{className:"seg"}, [["approve","Ask me first"],["auto","Publish automatically"]].map(([v,l])=>e("button",{key:v,className:cfg.mode===v?"on":"",onClick:()=>setCfg({...cfg,mode:v})},l)))),
       e("div",{className:"f"},"Post to", e("div",{className:"seg"}, PLATFORMS.map(([v,l])=>e("button",{key:v,className:cfg.platform===v?"on":"",onClick:()=>setCfg({...cfg,platform:v})},l)))),
       e("div",{className:"f"},"Rotate through", e("div",{className:"chips"}, STYLES.map(x=>e("button",{key:x,className:"chip"+(cfg.styles.indexOf(x)>-1?" on":""),onClick:()=>toggleIn("styles",x)},x)))),
       e("div",{className:"photo-pick",style:{cursor:"default",flexWrap:"wrap"}},
         e("div",{style:{width:56,height:56,borderRadius:8,background:"var(--paper)",display:"grid",placeItems:"center",fontFamily:"var(--display)",fontSize:20,fontWeight:600}},nPhotos),
-        e("div",{style:{flex:"1 1 200px",minWidth:0}}, e("b",null,"Photo library"),
-          e("div",{className:"note"}, nPhotos+" photo"+(nPhotos===1?"":"s")+", including "+nPairs+" before & after pair"+(nPairs===1?"":"s")+". "+(cfg.styles.indexOf("Before & After")>-1 && !nPairs ? "Add a pair to include Before & After posts." : CONFIG.aiName.split(" ")[0]+" picks a photo for each post"+(/Instagram/.test(cfg.platform)?"; Instagram posts need one.":".")))),
+        e("div",{style:{flex:"1 1 200px",minWidth:0}}, e("b",null,"Your photos"),
+          e("div",{className:"note"}, nPhotos+" photo"+(nPhotos===1?"":"s")+", including "+nPairs+" before & after pair"+(nPairs===1?"":"s")+". "+(cfg.styles.indexOf("Before & After")>-1 && !nPairs ? "Add a pair to include Before & After posts." : CONFIG.aiName.split(" ")[0]+" attaches one to each post"+(/Instagram/.test(cfg.platform)?"; Instagram posts need one.":".")))),
         e("div",{className:"row"},
           e("label",{className:"btn ghost sm",style:{cursor:"pointer"}},busy==="photos"?"Uploading…":"Add photos",e("input",{id:"ap-photos",type:"file",accept:"image/*",multiple:true,onChange:addPhotos})),
           e("button",{className:"btn ghost sm",onClick:()=>setPairOpen(true)},"Add before & after pair"),
           nPhotos ? e("button",{className:"btn ghost sm",onClick:clear},"Clear") : null)),
       pairOpen && e(PairModal,{ctx,onClose:()=>setPairOpen(false),onAdd:addPair}),
+      base.enabled && dirty && upcoming.length ? e("div",{className:"note"},"Saving replaces the "+upcoming.length+" planned post"+(upcoming.length>1?"s":"")+" with a new plan.") : null,
       e("div",{className:"row",style:{justifyContent:"flex-end"}},
-        e("button",{className:"btn ghost",disabled:!!busy,onClick:runNow},Icon("spark",15),busy==="run"?"Writing…":"Create next post now"),
-        e("button",{className:"btn",disabled:!dirty||!!busy||!cfg.days.length||!cfg.styles.length,onClick:()=>persist(cfg,"Schedule saved")},busy==="save"?"Saving…":"Save schedule"))));
+        e("button",{className:"btn ghost",disabled:!!busy,onClick:runNow},Icon("spark",15),busy==="run"?"Writing…":"Write one now"),
+        base.enabled
+          ? e("button",{className:"btn",disabled:!dirty||!!busy||!valid,onClick:()=>persist(cfg,true)},busy==="save"?"Planning…":"Save & re-plan")
+          : e("button",{className:"btn",disabled:!!busy||!valid,onClick:()=>{ const s2={...cfg,enabled:true}; setCfg(s2); persist(s2,false); }},busy==="save"?"Planning…":"Turn on & plan 2 weeks"))));
 }
 function Social({ctx}){
   const {db,up,notify} = ctx;
@@ -1825,11 +1893,15 @@ function Social({ctx}){
     up("posts",ps=>ps.concat([{id:uid("s"),projectId:p.id,platform,style,caption,date:status==="Posted"?dOff(0):date,time,status,image:postPhoto||null}])); setCaption(""); clearPhotos();
     notify(status==="Posted"?"Posted to "+platform:"Scheduled for "+whenLabel(date)+" at "+time);
   };
-  const posts = db.posts.slice().sort((a,b)=>(b.date+(b.time||"")).localeCompare(a.date+(a.time||"")));
+  const isQueued = x => x.status==="Draft" || x.status==="Scheduled";
+  const upcomingPosts = db.posts.filter(isQueued).sort((a,b)=>postTime(a)-postTime(b));
+  const pastPosts = db.posts.filter(x=>!isQueued(x)).sort((a,b)=>postTime(b)-postTime(a));
+  const booked = x => "Approved. Posts "+whenLabel(x.date)+" at "+fmtClock(x.time||"10:00")+".";
   const approve = x => {
-    if(!(LIVE && x.live)){ up("posts",ps=>ps.map(p=>p.id===x.id?{...p,caption:x.caption,status:"Posted",date:dOff(0),error:""}:p)); notify("Published to "+x.platform); return Promise.resolve(true); }
+    const future = postTime(x) > Date.now()+60000;
+    if(!(LIVE && x.live)){ up("posts",ps=>ps.map(p=>p.id===x.id?(future?{...p,caption:x.caption,status:"Scheduled",error:""}:{...p,caption:x.caption,status:"Posted",date:dOff(0),error:""}):p)); notify(future?booked(x):"Published to "+x.platform); return Promise.resolve(true); }
     setPosting("a"+x.id);
-    return api("approvePost",{id:x.id}).then(r=>{ up("posts",ps=>ps.map(p=>p.id===x.id?r.post:p)); notify("Published to "+x.platform); return true; })
+    return api("approvePost",{id:x.id}).then(r=>{ up("posts",ps=>ps.map(p=>p.id===x.id?r.post:p)); notify(r.post.status==="Scheduled"?booked(r.post):"Published to "+x.platform); return true; })
       .catch(err=>{ notify(err.message); return false; }).finally(()=>setPosting(""));
   };
   const discard = x => { up("posts",ps=>ps.filter(p=>p.id!==x.id)); if(LIVE && x.live) api("deletePost",{id:x.id}).catch(err=>notify(err.message)); notify(x.status==="Scheduled"?"Scheduled post deleted":"Draft discarded"); };
@@ -1865,15 +1937,32 @@ function Social({ctx}){
         e("div",{className:"eyebrow"},"Preview"),
         e(PostPreview,{p,platform:platform==="Instagram"?"Instagram":"Facebook",style,photo:postPhoto,caption: caption || (busy?"…":"Press Write it for me and the caption appears here.")}))),
     e("div",{className:"card"},
-      e("div",{className:"card-h"},e("h2",{className:"t"},"Content calendar"),e("span",{className:"muted"},posts.filter(x=>x.status==="Scheduled").length+" scheduled")),
-      posts.length ? posts.map(x=>{ const pr=projById(db,x.projectId); return e("div",{className:"lrow prow",key:x.id,role:"button",tabIndex:0,title:"Open post",onClick:()=>setView(x.id),onKeyDown:ev=>{ if(ev.key==="Enter") setView(x.id); }},
-        e("div",{style:{width:52,textAlign:"center",flexShrink:0}}, e("div",{style:{fontSize:11,fontWeight:700,color:"var(--muted)",textTransform:"uppercase"}},toDate(x.date).toLocaleDateString("en-US",{month:"short"})), e("div",{style:{fontFamily:"var(--display)",fontSize:22,fontWeight:600,lineHeight:1}},toDate(x.date).getDate())),
-        e("div",{className:"grow"}, e("div",{className:"tt"},x.style+" · "+(pr?pr.area:(x.projectName||""))),
-          e("div",{className:"mt",style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},(x.caption||"").split("\n")[0]),
-          x.error ? e("div",{className:"note"+(x.status==="Failed"?" bad":"")},x.error) : null,
-          x.status==="Draft" ? e("div",{className:"row",style:{marginTop:8}}, e("button",{className:"btn ghost sm",onClick:ev=>{ev.stopPropagation();setView(x.id);}},"Preview"), e("button",{className:"btn sm",disabled:posting==="a"+x.id,onClick:ev=>{ev.stopPropagation();approve(x);}},Icon("send",14),posting==="a"+x.id?"Publishing…":"Approve & publish"), e("button",{className:"btn ghost sm",onClick:ev=>{ev.stopPropagation();discard(x);}},"Discard")) : null,
-          (x.fbUrl||x.igUrl) ? e("div",{className:"row",style:{marginTop:4}}, x.fbUrl? e("a",{className:"lnk",href:x.fbUrl,target:"_blank",rel:"noopener",onClick:ev=>ev.stopPropagation()},"View on Facebook ↗"):null, x.igUrl? e("a",{className:"lnk",href:x.igUrl,target:"_blank",rel:"noopener",onClick:ev=>ev.stopPropagation()},"View on Instagram ↗"):null) : null),
-        x.auto ? Pill("gold","Auto") : null, Pill(PLAT_CLS[x.platform]||"mute",x.platform==="Facebook + Instagram"?"FB + IG":x.platform), Pill(x.status==="Posted"?"ok":x.status==="Failed"?"bad":x.status==="Draft"?"gold":"warn",x.status==="Draft"?"Needs approval":x.status)); }) : e("div",{className:"empty"},"No posts yet")));
+      e("div",{className:"card-h"},e("h2",{className:"t"},"Content calendar"),e("span",{className:"muted"},upcomingPosts.length+" upcoming")),
+      e("div",{className:"eyebrow",style:{marginTop:4}},"Upcoming"),
+      upcomingPosts.length ? upcomingPosts.map(x=>e(PostRow,{key:x.id,x,db,setView,approve,discard,posting})) : e("div",{className:"empty",style:{margin:"6px 0 14px"}},"Nothing scheduled. Turn on Autopilot posting or schedule a post above."),
+      e("div",{className:"eyebrow",style:{marginTop:18}},"Published"),
+      pastPosts.length ? pastPosts.map(x=>e(PostRow,{key:x.id,x,db,setView,approve,discard,posting})) : e("div",{className:"empty"},"No posts yet")));
+}
+function PostRow({x,db,setView,approve,discard,posting}){
+  const pr = projById(db,x.projectId), d = toDate(x.date);
+  const future = postTime(x) > Date.now()+60000;
+  return e("div",{className:"lrow prow",role:"button",tabIndex:0,title:"Open post",onClick:()=>setView(x.id),onKeyDown:ev=>{ if(ev.key==="Enter") setView(x.id); }},
+    e("div",{style:{width:52,textAlign:"center",flexShrink:0}},
+      e("div",{style:{fontSize:11,fontWeight:700,color:"var(--muted)",textTransform:"uppercase"}},d.toLocaleDateString("en-US",{weekday:"short"})),
+      e("div",{style:{fontFamily:"var(--display)",fontSize:22,fontWeight:600,lineHeight:1}},d.getDate()),
+      e("div",{style:{fontSize:10.5,color:"var(--muted)"}},d.toLocaleDateString("en-US",{month:"short"}))),
+    e("div",{className:"grow"},
+      e("div",{className:"tt"},(x.time?fmtClock(x.time)+" · ":"")+x.style+" · "+(pr?pr.area:(x.projectName||""))),
+      e("div",{className:"mt",style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},(x.caption||"").split("\n")[0]),
+      x.error ? e("div",{className:"note"+(x.status==="Failed"?" bad":"")},x.error) : null,
+      x.status==="Draft" ? e("div",{className:"row",style:{marginTop:8}},
+        e("button",{className:"btn ghost sm",onClick:ev=>{ev.stopPropagation();setView(x.id);}},"Preview"),
+        e("button",{className:"btn sm",disabled:posting==="a"+x.id,onClick:ev=>{ev.stopPropagation();approve(x);}},Icon(future?"check":"send",14),posting==="a"+x.id?"Saving…":future?"Approve":"Approve & publish now"),
+        e("button",{className:"btn ghost sm",onClick:ev=>{ev.stopPropagation();discard(x);}},"Discard")) : null,
+      (x.fbUrl||x.igUrl) ? e("div",{className:"row",style:{marginTop:4}}, x.fbUrl? e("a",{className:"lnk",href:x.fbUrl,target:"_blank",rel:"noopener",onClick:ev=>ev.stopPropagation()},"View on Facebook ↗"):null, x.igUrl? e("a",{className:"lnk",href:x.igUrl,target:"_blank",rel:"noopener",onClick:ev=>ev.stopPropagation()},"View on Instagram ↗"):null) : null),
+    x.auto ? Pill("gold","Auto") : null,
+    Pill(PLAT_CLS[x.platform]||"mute",x.platform==="Facebook + Instagram"?"FB + IG":x.platform),
+    Pill(x.status==="Posted"?"ok":x.status==="Failed"?"bad":x.status==="Draft"?"gold":"warn",x.status==="Draft"?"Needs approval":x.status));
 }
 
 /* ═══════════════════════ ASK (AI chat) ═══════════════════════ */
