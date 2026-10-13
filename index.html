@@ -311,6 +311,20 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 .note{font-size:12.5px;color:var(--muted)}
 .note.bad{color:var(--bad)}
 a.lnk{text-decoration:none}
+.cal-day{display:grid;grid-template-columns:76px minmax(0,1fr);gap:16px;padding:14px 4px;border-top:1px solid var(--line-2)}
+.cal-day:first-child{border-top:0}
+.cal-day .dl{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.cal-day .wd{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.cal-day .dn{font-family:var(--display);font-size:26px;font-weight:600;line-height:1}
+.cal-day.today .dn{color:var(--gold-ink)}
+.ev{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:12px;align-items:start;width:100%;text-align:left;font:inherit;color:inherit;background:var(--white);border:1px solid var(--line);border-left:3px solid var(--navy);border-radius:10px;padding:10px 12px;cursor:pointer}
+.ev:hover{border-color:var(--gold);border-left-color:var(--navy)}
+.ev .tm{font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
+.ev .gs{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.ev .gs .pill{white-space:normal;overflow-wrap:anywhere;text-align:left}
+.f .chips,.f .chip{text-transform:none;letter-spacing:0}
+.ms-mark{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font:inherit;font-size:12.5px;font-weight:600;color:var(--gold-ink);background:var(--gold-soft);border:1px dashed #E6CF86;border-radius:8px;padding:6px 10px;cursor:pointer}
+@media (max-width:820px){ .cal-day{grid-template-columns:52px minmax(0,1fr);gap:10px} .ev{grid-template-columns:62px minmax(0,1fr)} .ev > a,.ev > span:last-child{display:none} }
 .acard{margin-top:10px;border:1px solid #EEDDA6;background:var(--gold-soft);border-radius:10px;padding:12px 12px 10px}
 .aitem{display:flex;gap:9px;align-items:flex-start;padding:5px 0;font-size:13.5px;line-height:1.45}
 .aitem.off{color:var(--muted);text-decoration:line-through}
@@ -397,7 +411,7 @@ const ICONS = {
   spark:"M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z",
   plus:"M12 5v14M5 12h14", check:"M5 12l5 5 9-10", x:"M6 6l12 12M18 6L6 18",
   send:"M22 2L11 13M22 2l-7 20-4-9-9-4z", back:"M15 18l-6-6 6-6",
-  cal:"M4 6h16v14H4zM4 10h16M8 3v4M16 3v4", flag:"M5 21V4h11l-2 4 2 4H5",
+  cal:"M4 6h16v14H4zM4 10h16M8 3v4M16 3v4", flag:"M12 3.5l8.5 8.5-8.5 8.5L3.5 12z",
 };
 const Icon = (n,s) => e("svg",{width:s||18,height:s||18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round","aria-hidden":true},e("path",{d:ICONS[n]}));
 const Pill = (cls,txt,k) => e("span",{className:"pill "+cls,key:k},txt);
@@ -454,7 +468,9 @@ function snapshot(db){
         quotes:db.quotes.filter(q=>q.projectId===p.id).map(q=>({item:q.item,vendor:q.vendor,amount:q.amount,status:q.status})),
         recentExpenses:db.expenses.filter(x=>x.projectId===p.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).map(x=>({date:x.date,amount:x.amount,category:x.category,vendor:x.vendor,notes:x.notes}))}; }),
     vendors: db.vendors.map(v=>({id:v.id,name:v.name,trade:v.category,phone:v.phone,email:v.email,rating:v.rating,notes:v.notes})),
-    leads: db.leads.map(l=>({name:l.name,service:l.service,source:l.source,stage:l.stage,estimatedValue:l.est,received:new Date(l.received).toISOString(),message:(l.message||"").slice(0,300),replyStatus:l.reply?l.reply.status:"none"})),
+    now: localStamp(new Date()),
+    events: (db.events||[]).filter(x=>new Date(x.end)>=new Date(T0.getTime()-DAY) && new Date(x.start)<=new Date(T0.getTime()+60*DAY)).map(x=>({id:x.id,title:x.title,start:localStamp(new Date(x.start)),end:localStamp(new Date(x.end)),location:x.location,projectId:x.projectId,guests:(x.guests||[]).map(g=>({email:g.email,name:nameFor(db,g.email),status:g.status}))})),
+    leads: db.leads.map(l=>({name:l.name,email:l.email,phone:l.phone,service:l.service,source:l.source,stage:l.stage,estimatedValue:l.est,received:new Date(l.received).toISOString(),message:(l.message||"").slice(0,300),replyStatus:l.reply?l.reply.status:"none"})),
     socialPosts: db.posts.map(p=>({platform:p.platform,type:p.style,date:p.date,status:p.status})),
     autopilot: db.autopilot,
   };
@@ -570,7 +586,7 @@ function seed(){
     P("p2","Instagram","Progress Update",1,"Scheduled"),
     P("p3","Facebook","Tip of the Week",3,"Scheduled"),
   ];
-  return {v:3,day:iso(T0),autopilot:false,autoSocial:defaultAutoSocial(),projects,expenses,milestones,tasks,quotes,vendors,leads,posts};
+  return {v:4,day:iso(T0),autopilot:false,autoSocial:defaultAutoSocial(),events:seedEvents(projects),projects,expenses,milestones,tasks,quotes,vendors,leads,posts};
 }
 
 /* ── "AI" writers (simulated for the demo; the live product connects to a real model) ── */
@@ -657,6 +673,15 @@ function answer(db,q){
     vs.forEach(v=>L.push(`• **${v.name}**, ${v.phone}, rated ${v.rating.toFixed(1)}. ${v.notes}`));
     return L;
   }
+  if(has("calendar","appointment","meeting","consultation","agenda","booked")){
+    const wk = (db.events||[]).filter(x=>new Date(x.end)>new Date() && new Date(x.start)<new Date(T0.getTime()+7*DAY)).sort((a,b)=>a.start.localeCompare(b.start));
+    if(!wk.length) return ["Your calendar is clear for the next 7 days."];
+    L.push(`You have **${wk.length} event${wk.length>1?"s":""}** in the next 7 days:`);
+    wk.forEach(x=>L.push(`• ${fmtEventTime(x.start,x.end)}: **${x.title}**${x.location?", "+x.location:""}${(x.guests||[]).length?" ("+x.guests.map(g=>nameFor(db,g.email)+" "+(GUEST[g.status]||GUEST.needsAction)[1].toLowerCase()).join(", ")+")":""}`));
+    const pend = wk.filter(x=>(x.guests||[]).some(g=>g.status==="needsAction"));
+    if(pend.length) L.push(`${pend.length} still waiting on a reply to the invite.`);
+    return L;
+  }
   if(has("budget","over","spend","spent","cost","money","profit","margin")){
     L.push("Here's where each open project stands against its budget:");
     open.forEach(p=>{ const sp=spent(db,p.id), pct=Math.round(sp/p.budget*100); L.push(`• **${p.name}**: ${money(sp)} of ${money(p.budget)} (${pct}%)${sp>p.budget?", **over by "+money(sp-p.budget)+"**":""}. Projected profit ${money(p.contract-Math.max(p.budget,sp))}.`); });
@@ -723,6 +748,8 @@ function brief(db){
   const od = db.tasks.filter(isOverdue);
   if(od.length) out.push({tone:"bad",text:`<b>${od.length} overdue task${od.length>1?"s":""}</b>, including "${od[0].task}" on ${projById(db,od[0].projectId).area}.`,go:["project",od[0].projectId,"tasks"],cta:"View tasks"});
   openProjects(db).forEach(p=>{ const sp=spent(db,p.id); if(sp>p.budget) out.push({tone:"bad",text:`<b>${p.name}</b> is ${money(sp-p.budget)} over its estimated cost.`,go:["project",p.id,"dashboard"],cta:"See budget"}); });
+  const todayEv = (db.events||[]).filter(x=>iso(new Date(x.start))===iso(T0) && new Date(x.end)>new Date()).sort((a,b)=>a.start.localeCompare(b.start));
+  if(todayEv.length) out.push({tone:"ok",text:`<b>${todayEv.length} appointment${todayEv.length>1?"s":""} today</b>, next is ${todayEv[0].title} at ${fmtT(new Date(todayEv[0].start))}.`,go:["calendar"],cta:"Calendar"});
   const nr = needsReply(db);
   if(nr.length) out.push({tone:"gold",text:`<b>${nr.length} new lead${nr.length>1?"s":""}</b> waiting on a reply. I've drafted responses for you to approve.`,go:["leads"],cta:"Review"});
   const pq = db.quotes.filter(q=>q.status==="Pending");
@@ -796,8 +823,55 @@ function describeAction(db,a){
       if(!parts.length) return bad(`${V.name}: nothing to change`);
       return {ok:true,icon:"users",text:`Vendor ${V.name}: ${parts.join(", ")}`,go:["vendors"]};
     }
+    case "addEvent": {
+      const st = toISOFromLocal(a.start);
+      if(!a.title || !st) return bad("Create an event: title or time missing");
+      const en = a.end ? toISOFromLocal(a.end) : new Date(new Date(st).getTime()+(Number(a.durationMinutes)||60)*60000).toISOString();
+      const gs = (a.guests||[]).filter(g=>/@/.test(g));
+      return {ok:true,icon:"cal",text:`Create "${a.title}" · ${fmtEventTime(st,en)}${a.location?" · "+a.location:""}${gs.length?" · invite "+gs.map(g=>nameFor(db,g)).join(", "):""}`,go:["calendar"]};
+    }
+    case "updateEvent": {
+      const E = (db.events||[]).find(x=>x.id===a.eventId);
+      if(!E) return bad("Update an event: event not found");
+      const parts = [];
+      if(a.start){ const st=toISOFromLocal(a.start); if(st && st!==E.start) parts.push("move to "+fmtEventTime(st,new Date(new Date(st).getTime()+(Number(a.durationMinutes)||((new Date(E.end)-new Date(E.start))/60000))*60000).toISOString())); }
+      else if(a.durationMinutes) parts.push("length "+a.durationMinutes+" min");
+      if(a.title && a.title!==E.title) parts.push(`rename to "${a.title}"`);
+      if(a.location && a.location!==E.location) parts.push("location → "+a.location);
+      (a.addGuests||[]).forEach(g=>parts.push("invite "+nameFor(db,g)));
+      (a.removeGuests||[]).forEach(g=>parts.push("remove "+nameFor(db,g)));
+      if(!parts.length) return bad(`"${E.title}": nothing to change`);
+      return {ok:true,icon:"cal",text:`Event "${E.title}": ${parts.join(", ")}${(E.guests||[]).length||(a.addGuests||[]).length?" · guests notified":""}`,go:["calendar"]};
+    }
+    case "cancelEvent": {
+      const E = (db.events||[]).find(x=>x.id===a.eventId);
+      if(!E) return bad("Cancel an event: event not found");
+      return {ok:true,icon:"x",text:`Cancel "${E.title}" · ${fmtEventTime(E.start,E.end)}${(E.guests||[]).length?" · guests notified":""}`,go:["calendar"]};
+    }
     default: return bad("Unsupported change: "+a.type);
   }
+}
+/* Calendar changes go through calOps (Google Calendar in live mode) and may take a moment */
+function applyCalendarAction(ctx,a){
+  const {db,calOps} = ctx;
+  if(a.type==="addEvent"){
+    const start = toISOFromLocal(a.start);
+    const end = a.end ? toISOFromLocal(a.end) : new Date(new Date(start).getTime()+(Number(a.durationMinutes)||60)*60000).toISOString();
+    return calOps.create({title:a.title,start,end,location:a.location||"",description:a.description||"",projectId:a.projectId||"",guests:(a.guests||[]).filter(g=>/@/.test(g))}, a.sendInvites!==false);
+  }
+  const E = (db.events||[]).find(x=>x.id===a.eventId);
+  if(!E) return Promise.reject(new Error("That event is no longer on the calendar."));
+  if(a.type==="cancelEvent") return calOps.remove(E.id,true);
+  const ch = {};
+  const len = Number(a.durationMinutes) || (new Date(E.end)-new Date(E.start))/60000;
+  if(a.start){ const st=toISOFromLocal(a.start); ch.start=st; ch.end=new Date(new Date(st).getTime()+len*60000).toISOString(); }
+  else if(a.durationMinutes){ ch.start=E.start; ch.end=new Date(new Date(E.start).getTime()+len*60000).toISOString(); }
+  ["title","location","description"].forEach(k=>{ if(a[k]) ch[k]=a[k]; });
+  if((a.addGuests||[]).length || (a.removeGuests||[]).length){
+    const cur = (E.guests||[]).map(g=>g.email).filter(g=>(a.removeGuests||[]).map(x=>x.toLowerCase()).indexOf(g.toLowerCase())===-1);
+    ch.guests = cur.concat((a.addGuests||[]).filter(g=>/@/.test(g) && cur.indexOf(g)===-1));
+  }
+  return calOps.update(E.id,ch,true);
 }
 function applyAction(up,a){
   switch(a.type){
@@ -862,8 +936,39 @@ function parseCommand(db,text){
     A.push({type:"addExpense",projectId:p.id,amount,category:cat,vendor:v?v.name:(fromM?fromM[1].trim():""),date:parseWhen(text)||dOff(0),notes:what.replace(/^(a|an|the)\s+/i,"")});
     return ok(`I'll log **${money(amount)}** to ${p.name}.`);
   }
-  // milestones
+  // calendar: create
   const p = matchProject(db,text);
+  if(!/\b(task|milestone|expense)\b/.test(s) && /\b(schedule|book|set up|setup|add|create|plan|put)\b.*\b(meeting|consultation|consult|walkthrough|walk-through|site visit|visit|call|inspection|appointment|event|review|delivery)\b/.test(s)){
+    const date = parseWhen(text) || dOff(1), tm = parseTime(text) || "10:00";
+    const who = findPerson(db,text);
+    const kind = (s.match(/\b(consultation|consult|walkthrough|walk-through|site visit|call|inspection|meeting|review|appointment|delivery)\b/)||[])[1] || "meeting";
+    const lab = ({consult:"Consultation","walk-through":"Walkthrough","site visit":"Site visit"})[kind] || kind[0].toUpperCase()+kind.slice(1);
+    const title = lab+(who&&who.name!==who.email?" — "+who.name:p?" — "+p.area:"");
+    const mins = (s.match(/\b(\d+)\s*(min|mins|minutes)\b/)||[])[1];
+    const dur = mins ? Number(mins) : /\bhour\b/.test(s) ? 60 : /consult/.test(kind) ? 45 : 60;
+    if(/\b(invite|with)\b/.test(s) && !who) return {answer:["Who should I invite? Give me their email, or a lead or vendor name that has one."],actions:[]};
+    A.push({type:"addEvent",title,start:date+"T"+tm,durationMinutes:dur,location:p?p.address:"",guests:who&&who.email?[who.email]:[],projectId:p?p.id:"",sendInvites:true});
+    return ok(`I'll put **${title}** on your calendar ${whenLabel(date)} at ${fmtClock(tm)}${who&&who.email?" and send "+who.name+" an invite":""}.`);
+  }
+  // calendar: change or cancel (only when an event matches better than a milestone or task)
+  const evM = bestMatch(db.events||[],text,"title");
+  const msPre = bestMatch(p ? db.milestones.filter(x=>x.projectId===p.id) : db.milestones,text,"title");
+  const evWins = evM && (!msPre || evM.score > msPre.score || /\b(meeting|event|appointment|calendar|consult|visit|call|delivery|invite)\b/.test(s));
+  if(evWins && /\b(cancel|delete|remove|call off)\b/.test(s) && !/\bremove\b.*\bfrom\b/.test(s)){
+    A.push({type:"cancelEvent",eventId:evM.item.id});
+    return ok(`I'll cancel **${evM.item.title}**${(evM.item.guests||[]).length?" and let the guests know":""}.`);
+  }
+  if(evWins && /\b(move|reschedule|push|change|shift|invite|add|bump)\b/.test(s)){
+    const act = {type:"updateEvent",eventId:evM.item.id};
+    const date = parseWhen(text), tm = parseTime(text);
+    if(date || tm){ const cur = new Date(evM.item.start); act.start = (date||iso(cur))+"T"+(tm||pad2(cur.getHours())+":"+pad2(cur.getMinutes())); }
+    const who = findPerson(db,text);
+    if(/\b(invite|add)\b/.test(s) && who && who.email) act.addGuests = [who.email];
+    if(!act.start && !act.addGuests) return {answer:[`What should change about "${evM.item.title}"? A new day or time, or someone to invite?`],actions:[]};
+    A.push(act);
+    return ok(`I'll update **${evM.item.title}**.`);
+  }
+  // milestones
   const msPool = p ? db.milestones.filter(x=>x.projectId===p.id) : db.milestones;
   if(/\badd\b.*\bmilestone\b/.test(s)){
     if(!p) return {answer:["Which project should the milestone go on?"],actions:[]};
@@ -902,9 +1007,142 @@ function parseCommand(db,text){
   return null;
 }
 
+/* ═══════════════════════ CALENDAR ═══════════════════════ */
+const pad2 = n => String(n).padStart(2,"0");
+const localStamp = d => iso(d)+"T"+pad2(d.getHours())+":"+pad2(d.getMinutes());
+const toISOFromLocal = s => { if(!s) return ""; if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) return new Date(s+":00").toISOString(); const d=new Date(s); return isNaN(d.getTime())?"":d.toISOString(); };
+const fmtClock = hm => { const [h,m]=hm.split(":").map(Number); return ((h+11)%12+1)+(m?":"+pad2(m):"")+" "+(h<12?"AM":"PM"); };
+const fmtT = d => fmtClock(pad2(d.getHours())+":"+pad2(d.getMinutes()));
+const fmtEventTime = (s,e) => { const a=new Date(s), b=new Date(e); return whenLabel(iso(a)).replace(/^./,c=>c.toUpperCase())+" "+fmtT(a)+"–"+fmtT(b); };
+const GUEST = {accepted:["ok","Accepted"],declined:["bad","Declined"],tentative:["warn","Maybe"],needsAction:["mute","Invited"]};
+const CAL_TYPES = {addEvent:1,updateEvent:1,cancelEvent:1};
+const mondayOf = d => { const x=new Date(d); x.setHours(0,0,0,0); const wd=x.getDay()===0?7:x.getDay(); x.setDate(x.getDate()-(wd-1)); return x; };
+function people(db){
+  const out = [];
+  db.leads.forEach(l=>{ if(l.email) out.push({name:l.name,email:l.email,kind:"Lead"}); });
+  db.vendors.forEach(v=>{ if(v.email) out.push({name:v.name,email:v.email,kind:v.category}); });
+  return out;
+}
+const nameFor = (db,email) => { const p = people(db).find(x=>x.email.toLowerCase()===String(email).toLowerCase()); return p ? p.name : email; };
+function findPerson(db,text){
+  const em = text.match(/[\w.+-]+@[\w-]+\.[\w.]+/); if(em) return {name:em[0],email:em[0]};
+  const t = text.toLowerCase();
+  const all = people(db);
+  return all.find(p=>t.includes(p.name.toLowerCase())) || all.find(p=>{ const f=first(p.name).toLowerCase(); return f.length>2 && new RegExp("\\b"+f.replace(/[^a-z]/g,"")+"\\b").test(t) && p.kind==="Lead"; }) || null;
+}
+function parseTime(s){
+  s = s.toLowerCase(); let m;
+  if(/\bnoon\b/.test(s)) return "12:00";
+  if((m = s.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)/))){ let h=Number(m[1])%12; if(m[3][0]==="p") h+=12; return pad2(h)+":"+(m[2]||"00"); }
+  if((m = s.match(/\bat (\d{1,2})(?::(\d{2}))?\b(?!\s*(?:days?|weeks?|\/))/))){ let h=Number(m[1]); if(h<7) h+=12; if(h>23) return null; return pad2(h)+":"+(m[2]||"00"); }
+  return null;
+}
+function seedEvents(projects){
+  const at = (d,h,m) => { const x=new Date(T0.getTime()+d*DAY); x.setHours(h,m||0,0,0); return x.toISOString(); };
+  const E = (title,d,h,m,mins,location,guests,projectId) => ({id:uid("ev"),title,start:at(d,h,m),end:new Date(new Date(at(d,h,m)).getTime()+mins*60000).toISOString(),location,description:"",guests,projectId,link:""});
+  const wkMon = (()=>{ const wd=T0.getDay()===0?7:T0.getDay(); return 8-wd; })();
+  return [
+    E("Site walkthrough — Hawthorne",1,9,0,60,"2214 Hawthorne Ave",[{email:"megan.doyle@example.com",status:"accepted"},{email:"chris.doyle@example.com",status:"needsAction"}],"p1"),
+    E("Consultation — Jessica Moreno",2,10,0,45,"",[{email:"jmoreno@example.com",status:"needsAction"}],""),
+    E("Tile delivery — Linwood",3,8,0,60,"508 Linwood Rd",[{email:"trade@tilegallery.co",status:"accepted"}],"p2"),
+    E("Design review — Okafor basement",4,14,0,60,"11 Brookside Ct",[{email:"okafors@example.com",status:"tentative"}],"p3"),
+    E("Weekly crew meeting",wkMon,7,30,30,"Shop",[],""),
+  ];
+}
+
+function EventForm({ctx,ev,preset,onClose}){
+  const {db,calOps} = ctx;
+  const editing = !!(ev && ev.id);
+  const base = ev || preset || {};
+  const s0 = base.start ? new Date(base.start) : (()=>{ const d=new Date(T0.getTime()+DAY); d.setHours(10,0,0,0); return d; })();
+  const dur0 = base.start && base.end ? Math.max(15,Math.round((new Date(base.end)-new Date(base.start))/60000)) : (base.durationMinutes||60);
+  const [title,setTitle] = useState(base.title||"");
+  const [date,setDate] = useState(iso(s0));
+  const [time,setTime] = useState(pad2(s0.getHours())+":"+pad2(s0.getMinutes()));
+  const [dur,setDur] = useState(String(dur0));
+  const [location,setLocation] = useState(base.location||"");
+  const [projectId,setProjectId] = useState(base.projectId||"");
+  const [guests,setGuests] = useState((base.guests||[]).map(g=>g.email||g));
+  const [guestIn,setGuestIn] = useState("");
+  const [notify,setNotifyOn] = useState(true);
+  const [busy,setBusy] = useState(false);
+  const [confirmDel,setConfirmDel] = useState(false);
+  const [err,setErr] = useState("");
+  const durs = [15,30,45,60,90,120,180,240]; if(durs.indexOf(Number(dur))===-1) durs.push(Number(dur));
+  const addGuest = () => { const v = guestIn.trim(); const m = v.match(/[\w.+-]+@[\w-]+\.[\w.]+/); if(!m){ setErr("Type a full email address, or pick someone from the list."); return; } if(guests.indexOf(m[0])===-1) setGuests(guests.concat([m[0]])); setGuestIn(""); setErr(""); };
+  const pickProject = v => { setProjectId(v); const p = projById(db,v); if(p && !location) setLocation(p.address); };
+  const save = () => {
+    const start = new Date(date+"T"+time+":00"); if(isNaN(start.getTime())){ setErr("Pick a date and time."); return; }
+    const end = new Date(start.getTime()+Number(dur)*60000);
+    const payload = {title:title.trim(),start:start.toISOString(),end:end.toISOString(),location,projectId,guests,description:base.description||""};
+    setBusy(true); setErr("");
+    (editing ? calOps.update(ev.id,payload,notify) : calOps.create(payload,notify))
+      .then(()=>{ notify && guests.length ? ctx.notify(editing?"Event updated. Guests notified.":"Event created. Invites sent.") : ctx.notify(editing?"Event updated":"Event created"); onClose(); })
+      .catch(e2=>{ setErr(e2.message); setBusy(false); });
+  };
+  const del = () => { setBusy(true); calOps.remove(ev.id,notify).then(()=>{ ctx.notify(guests.length&&notify?"Event cancelled. Guests notified.":"Event cancelled"); onClose(); }).catch(e2=>{ setErr(e2.message); setBusy(false); }); };
+  return e(Modal,{title:editing?"Edit event":"New event",onClose},
+    e("div",{className:"form"},
+      Field("Title",Inp("ev-title",title,setTitle,"text","e.g. Consultation — Jessica Moreno"),true),
+      Field("Date",Inp("ev-date",date,setDate,"date")), Field("Start",Inp("ev-time",time,setTime,"time")),
+      Field("Length",Sel("ev-dur",dur,setDur,durs.sort((a,b)=>a-b).map(m=>({v:String(m),l:m<60?m+" min":(m/60)+" hr"+(m>60?"s":"")})))),
+      Field("Project",Sel("ev-proj",projectId,pickProject,[{v:"",l:"None"}].concat(db.projects.map(p=>({v:p.id,l:p.name}))))),
+      Field("Location",Inp("ev-loc",location,setLocation,"text","Address or meeting link"),true),
+      e("div",{className:"f full"},"Guests",
+        e("div",{className:"row",style:{flexWrap:"nowrap"}}, e("input",{id:"ev-guest",list:"ev-people",value:guestIn,placeholder:"Email, or pick a lead or vendor",onChange:ev2=>{ const v=ev2.target.value; const m=v.match(/<([^>]+)>$/); setGuestIn(m?m[1]:v); },onKeyDown:ev2=>{ if(ev2.key==="Enter"){ ev2.preventDefault(); addGuest(); } }}), e("button",{className:"btn ghost sm",type:"button",onClick:addGuest},"Add")),
+        e("datalist",{id:"ev-people"}, people(db).map(p=>e("option",{key:p.email,value:p.name+" <"+p.email+">"}))),
+        guests.length ? e("div",{className:"chips",style:{marginTop:8}}, guests.map(g=>{ const st=(base.guests||[]).find(x=>(x.email||x)===g); const gs=GUEST[(st&&st.status)||"needsAction"]||GUEST.needsAction;
+          return e("span",{key:g,className:"chip",style:{display:"inline-flex",alignItems:"center",gap:6,cursor:"default"}}, nameFor(db,g), editing&&st? Pill(gs[0],gs[1]) : null, e("button",{className:"x",style:{padding:0},onClick:()=>setGuests(guests.filter(x=>x!==g)),"aria-label":"Remove "+g},Icon("x",13))); })) : null),
+      e("label",{className:"row full",style:{gap:8,fontSize:13.5}}, e("input",{id:"ev-notify",type:"checkbox",checked:notify,onChange:ev2=>setNotifyOn(ev2.target.checked),style:{width:"auto"}}), editing?"Email guests about changes":"Email calendar invites to guests")),
+    err ? e("p",{className:"err",style:{marginBottom:0}},err) : null,
+    e("div",{className:"actions",style:{justifyContent:"space-between"}},
+      editing ? (confirmDel ? e("div",{className:"row"}, e("span",{className:"note"},"Cancel this event"+(guests.length&&notify?" and tell guests?":"?")), e("button",{className:"btn navy sm",disabled:busy,onClick:del},"Yes, cancel it"), e("button",{className:"btn ghost sm",onClick:()=>setConfirmDel(false)},"Keep")) : e("button",{className:"btn ghost",onClick:()=>setConfirmDel(true)},"Cancel event")) : e("span"),
+      e("div",{className:"row"}, e("button",{className:"btn ghost",onClick:onClose},"Close"), e("button",{className:"btn",disabled:busy||!title.trim(),onClick:save},busy?"Saving…":editing?"Save changes":(guests.length&&notify?"Create & send invites":"Create event")))));
+}
+
+function CalendarView({ctx}){
+  const {db,go,loadEvents} = ctx;
+  const [week,setWeek] = useState(()=>mondayOf(T0));
+  const [form,setForm] = useState(null);
+  const [loading,setLoading] = useState(false);
+  useEffect(()=>{ if(!LIVE) return; setLoading(true); loadEvents(week, new Date(week.getTime()+7*DAY)).finally(()=>setLoading(false)); },[week.getTime()]);
+  const days = Array.from({length:7},(_,i)=>new Date(week.getTime()+i*DAY));
+  const events = (db.events||[]);
+  const label = days[0].toLocaleDateString("en-US",{month:"short",day:"numeric"})+" – "+days[6].toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  return e("div",{className:"wrap"},
+    e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow"},LIVE?"Synced with Google Calendar":"Sample schedule"), e("h1",{className:"t"},"Calendar"), e("div",{className:"sub"},"Appointments, site visits and deliveries, with project milestones alongside.")),
+      e("button",{className:"btn",onClick:()=>setForm({})},Icon("plus",16),"New event")),
+    e("div",{className:"row",style:{justifyContent:"space-between",marginBottom:12}},
+      e("div",{className:"row"},
+        e("button",{className:"btn ghost sm",onClick:()=>setWeek(new Date(week.getTime()-7*DAY)),"aria-label":"Previous week"},Icon("back",15)),
+        e("button",{className:"btn ghost sm",onClick:()=>setWeek(mondayOf(T0))},"This week"),
+        e("button",{className:"btn ghost sm",onClick:()=>setWeek(new Date(week.getTime()+7*DAY)),"aria-label":"Next week",style:{transform:"scaleX(-1)"}},Icon("back",15))),
+      e("b",{className:"num"},label, loading? e("span",{className:"muted",style:{fontWeight:400}}," · loading…") : null)),
+    e("div",{className:"card",style:{paddingTop:4,paddingBottom:4}},
+      days.map(d=>{
+        const dayIso = iso(d), isToday = dayIso===iso(T0);
+        const evs = events.filter(x=>iso(new Date(x.start))===dayIso).sort((a,b)=>a.start.localeCompare(b.start));
+        const ms = db.milestones.filter(m=>m.date===dayIso);
+        return e("div",{key:dayIso,className:"cal-day"+(isToday?" today":"")},
+          e("div",{className:"dl"}, e("div",{className:"wd"},d.toLocaleDateString("en-US",{weekday:"short"})), e("div",{className:"dn"},d.getDate()), isToday? Pill("gold","Today") : null),
+          e("div",{className:"stack",style:{gap:8,minWidth:0}},
+            ms.map(m=>{ const p=projById(db,m.projectId); return e("button",{key:m.id,className:"ms-mark",onClick:()=>go("project",m.projectId,"planning")},Icon("flag",13),e("span",null,"Milestone · "+(p?p.area+": ":"")+m.title), m.done? Pill("ok","Done") : null); }),
+            evs.map(x=>{ const p=projById(db,x.projectId);
+              return e("button",{key:x.id,className:"ev",onClick:()=>setForm({ev:x})},
+                e("div",{className:"tm"},x.allDay?"All day":fmtT(new Date(x.start)), e("div",{className:"muted",style:{fontWeight:400,fontSize:12}},x.allDay?"":"to "+fmtT(new Date(x.end)))),
+                e("div",{style:{minWidth:0}},
+                  e("div",{style:{fontWeight:700}},x.title),
+                  (x.location||p) ? e("div",{className:"muted",style:{fontSize:12.5,marginTop:2}},[x.location,p&&p.name!==x.location?p.name:""].filter(Boolean).join(" · ")) : null,
+                  x.guests && x.guests.length ? e("div",{className:"gs"}, x.guests.map(g=>{ const gs=GUEST[g.status]||GUEST.needsAction; return e("span",{key:g.email,className:"pill "+gs[0]},nameFor(db,g.email)+" · "+gs[1]); })) : null),
+                x.link ? e("a",{className:"lnk",href:x.link,target:"_blank",rel:"noopener",onClick:ev2=>ev2.stopPropagation(),style:{fontSize:12.5,whiteSpace:"nowrap"}},"Google ↗") : e("span")); }),
+            !evs.length && !ms.length ? e("div",{className:"muted",style:{fontSize:13,padding:"6px 0"}},"Nothing scheduled") : null));
+      })),
+    form && e(EventForm,{ctx,ev:form.ev,preset:form.preset,onClose:()=>setForm(null)}));
+}
+
 /* ── storage (demo resets each day so dates stay realistic) ── */
 const KEY = "buildflow-demo";
-function loadDb(){ try{ const raw=localStorage.getItem(KEY); if(!raw) return null; const d=JSON.parse(raw); if(d.v!==3 || d.day!==iso(T0)) return null; return d; }catch(err){ return null; } }
+function loadDb(){ try{ const raw=localStorage.getItem(KEY); if(!raw) return null; const d=JSON.parse(raw); if(d.v!==4 || d.day!==iso(T0)) return null; return d; }catch(err){ return null; } }
 function saveDb(d){ try{ localStorage.setItem(KEY,JSON.stringify(d)); }catch(err){} }
 
 /* ═══════════════════════ shared UI ═══════════════════════ */
@@ -954,6 +1192,9 @@ function Home({ctx}){
         e("div",{className:"card-h",style:{margin:"6px 0 -4px"}}, e("h2",{className:"t"},"Projects"), e("button",{className:"lnk",onClick:()=>go("projects")},"See all")),
         e("div",{className:"grid g-proj"}, open.map(p=>e(ProjectCard,{key:p.id,p,db,go})))),
       e("div",{className:"stack"},
+        e("div",{className:"card"}, e("div",{className:"card-h"},e("h2",{className:"t"},"Coming up"),e("button",{className:"lnk",onClick:()=>go("calendar")},"Calendar")),
+          (()=>{ const nx=(db.events||[]).filter(x=>new Date(x.end)>new Date()).sort((a,b)=>a.start.localeCompare(b.start)).slice(0,4);
+            return nx.length ? nx.map(x=>e("div",{className:"lrow",key:x.id}, e("div",{className:"grow"}, e("div",{className:"tt"},x.title), e("div",{className:"mt"},(x.location||"")+((x.guests||[]).length?(x.location?" · ":"")+(x.guests.length)+" guest"+(x.guests.length>1?"s":""):""))), Pill(iso(new Date(x.start))===iso(T0)?"gold":"mute",whenLabel(iso(new Date(x.start))).replace(/^./,c=>c.toUpperCase())+" "+fmtT(new Date(x.start))))) : e("div",{className:"empty"},"Nothing on the calendar"); })()),
         e("div",{className:"card"}, e("div",{className:"card-h"},e("h2",{className:"t"},"Upcoming milestones")),
           upcoming.length? upcoming.map(m=>{ const p=projById(db,m.projectId); return e("div",{className:"lrow",key:m.id}, e("div",{className:"grow"}, e("div",{className:"tt"},m.title), e("div",{className:"mt"},p.name)), Pill(daysFrom(m.date)<=3?"gold":"mute",whenLabel(m.date))); }) : e("div",{className:"empty"},"No upcoming milestones")),
         e("div",{className:"card"}, e("div",{className:"card-h"},e("h2",{className:"t"},"AI activity"),e("span",{className:"pill gold"},Icon("spark",12),"Automated")),
@@ -1295,7 +1536,7 @@ function Leads({ctx}){
             e("div",{className:"top"},e("span",{className:"nm"},l.name),e("span",{className:"tm"},ago(l.received))),
             e("div",{className:"ms"},l.message),
             e("div",{className:"row"},Pill(st[0],st[1]),l.sample&&LIVE?Pill("mute","Sample"):null,e("span",{className:"muted",style:{fontSize:12}},l.service+" · "+l.source))); }) : e("div",{className:"empty"},"No leads yet. Open the quote form or send an email to your lead address.")),
-        cur ? e(LeadDetail,{key:cur.id,lead:cur,write,onSend:text=>sendReply(cur,text),back:()=>setSel(null)}) : e("div",{className:"card idetail"},e("div",{className:"empty"},"Select a lead to read it and see the AI reply.")))
+        cur ? e(LeadDetail,{key:cur.id,lead:cur,ctx,write,onSend:text=>sendReply(cur,text),back:()=>setSel(null)}) : e("div",{className:"card idetail"},e("div",{className:"empty"},"Select a lead to read it and see the AI reply.")))
     : e("div",{className:"kan"}, CONFIG.leadStages.map(st=>{ const ls=leads.filter(l=>l.stage===st); return e("div",{className:"kcol",key:st},
         e("div",{className:"kcol-h"},st+" ("+ls.length+")",e("span",{className:"num"},money(ls.reduce((a,l)=>a+(l.est||0),0)))),
         ls.map(l=>e("div",{className:"kcard",key:l.id}, e("b",null,l.name), e("div",{className:"muted",style:{fontSize:12.5}},l.service+(l.est?" · "+money(l.est):"")),
@@ -1303,7 +1544,9 @@ function Leads({ctx}){
     qr && e(QuoteFormModal,{onClose:()=>setQr(false)}));
 }
 
-function LeadDetail({lead,write,onSend,back}){
+function LeadDetail({lead,ctx,write,onSend,back}){
+  const [sched,setSched] = useState(false);
+  const upcoming = (ctx.db.events||[]).filter(x=>lead.email && (x.guests||[]).some(g=>g.email.toLowerCase()===lead.email.toLowerCase()) && new Date(x.end)>new Date());
   const [text,setText] = useState(lead.reply && lead.reply.text || "");
   const [variant,setVariant] = useState((lead.reply && lead.reply.variant) || 0);
   const [sending,setSending] = useState(false);
@@ -1315,7 +1558,9 @@ function LeadDetail({lead,write,onSend,back}){
     e("button",{className:"lnk mobile-only",style:{alignSelf:"flex-start",color:"var(--muted)"},onClick:back},"← All leads"),
     e("div",{className:"row",style:{justifyContent:"space-between",alignItems:"flex-start"}},
       e("div",{style:{minWidth:0}}, e("h2",{className:"t"},lead.name), e("div",{className:"muted",style:{fontSize:13,marginTop:3,userSelect:"text",overflowWrap:"anywhere"}},contact)),
-      e("div",{className:"row"}, Pill(STAGE_CLS[lead.stage]||"mute",lead.stage), Pill("mute",lead.source))),
+      e("div",{className:"row"}, Pill(STAGE_CLS[lead.stage]||"mute",lead.stage), Pill("mute",lead.source), e("button",{className:"btn ghost sm",onClick:()=>setSched(true)},Icon("cal",14),"Schedule consultation"))),
+    upcoming.length ? e("div",{className:"note"},Icon("cal",13)," ",upcoming.map(x=>x.title+", "+fmtEventTime(x.start,x.end)).join(" · ")) : null,
+    sched && e(EventForm,{ctx,preset:{title:"Consultation — "+lead.name,durationMinutes:45,guests:lead.email?[lead.email]:[],description:lead.service+" inquiry: "+(lead.message||"").slice(0,400)},onClose:()=>setSched(false)}),
     e("div",{className:"row muted",style:{fontSize:12.5}}, e("span",null,lead.service), lead.est? e("span",null,"· Est. "+money(lead.est)) : null, e("span",null,"· Received "+ago(lead.received))),
     e("div",{className:"bubble"},lead.message),
     e("div",{className:"eyebrow gold",style:{marginTop:4}},Icon("spark",13), !r ? "No reply yet" : r.status==="writing" ? CONFIG.aiName+" is writing" : r.status==="draft" ? "Draft reply · waiting for your approval" : (r.auto?"Sent automatically by ":"Approved by "+CONFIG.ownerName+" · written by ")+CONFIG.aiName+" · "+ago(r.at)),
@@ -1500,18 +1745,27 @@ function Social({ctx}){
 }
 
 /* ═══════════════════════ ASK (AI chat) ═══════════════════════ */
-const SUGGEST = ["What needs my attention today?","Are any jobs over budget?","Add a $450 tile expense to Hawthorne from Tile Gallery","Move Cabinets installed to Oct 23","Add vendor Blue Ridge Painting, painter, (804) 555-0170","Mark Tile complete done on Linwood","Which leads need a reply?"];
+const SUGGEST = ["What needs my attention today?","Schedule a consultation with Ashley Romero Thursday at 2pm","Move the Hawthorne site walkthrough to Friday at 9am","Add a $450 tile expense to Hawthorne from Tile Gallery","Move Cabinets installed to Oct 23","Add vendor Blue Ridge Painting, painter, (804) 555-0170","What's on my calendar this week?"];
 function ActionCard({msg,ctx,onDone}){
   const [items] = useState(()=>msg.actions.map(a=>({a,d:describeAction(ctx.db,a)})));
   const good = items.filter(x=>x.d.ok);
-  const apply = () => { good.forEach(x=>applyAction(ctx.up,x.a)); onDone("applied"); ctx.notify(good.length+" change"+(good.length>1?"s":"")+" applied"); };
+  const [busy,setBusy] = useState(false);
+  const apply = async () => {
+    setBusy(true); let done = 0; const fails = [];
+    for(const x of good){
+      try{ if(CAL_TYPES[x.a.type]) await applyCalendarAction(ctx,x.a); else applyAction(ctx.up,x.a); done++; }
+      catch(err){ fails.push(err.message); }
+    }
+    setBusy(false); onDone(done ? "applied" : "pending");
+    ctx.notify(fails.length ? (done? done+" applied. ":"")+fails[0] : done+" change"+(done>1?"s":"")+" applied");
+  };
   return e("div",{className:"acard"},
     e("div",{className:"eyebrow gold",style:{marginBottom:4}},Icon(msg.state==="applied"?"check":"spark",12), msg.state==="applied" ? "Applied" : msg.state==="cancelled" ? "Cancelled" : "Proposed change"+(items.length>1?"s":"")),
     items.map((x,j)=>e("div",{key:j,className:"aitem"+(x.d.ok&&msg.state!=="cancelled"?"":" off")}, e("span",{className:"aic"},Icon(x.d.ok?(x.d.icon||"check"):"x",13)), e("span",null,x.d.text),
       x.d.ok && msg.state==="applied" && x.d.go ? e("button",{className:"lnk",onClick:()=>ctx.go(...x.d.go)},"View") : null)),
     msg.state==="pending" && good.length ? e("div",{className:"row",style:{justifyContent:"flex-end",marginTop:8}},
       e("button",{className:"btn ghost sm",onClick:()=>onDone("cancelled")},"Cancel"),
-      e("button",{className:"btn sm",onClick:apply},Icon("check",14),good.length>1?"Apply "+good.length+" changes":"Apply")) : null);
+      e("button",{className:"btn sm",disabled:busy,onClick:apply},Icon("check",14),busy?"Applying…":good.length>1?"Apply "+good.length+" changes":"Apply")) : null);
 }
 function Ask({ctx}){
   const [msgs,setMsgs] = useState([{r:"ai",t:[`Hi ${CONFIG.ownerName}, I'm ${CONFIG.aiName}. I can see your projects, budgets, tasks, leads, quotes, and vendors. Ask me anything, or tell me what to change, like "add a $300 permit expense to Brookside" or "move Tile complete to Friday". I'll show you the change before I make it.`]}]);
@@ -1593,6 +1847,14 @@ function App(){
     const t = setInterval(()=>{ refresh().catch(()=>{}); },15000);
     return ()=>clearInterval(t);
   },[authed]);
+  /* Live: replace sample events with the real calendar, and refresh every 2 minutes */
+  useEffect(()=>{
+    if(!LIVE || !authed) return;
+    setDb(d=>({...d,events:(d.events||[]).filter(x=>x.live)}));
+    const pull = () => { if(!document.hidden) loadEvents(new Date(T0.getTime()-7*DAY), new Date(T0.getTime()+45*DAY)); };
+    pull(); const t = setInterval(pull,120000);
+    return ()=>clearInterval(t);
+  },[authed]);
   /* Keep the server's copy of project info current, so automated posts know about your jobs */
   useEffect(()=>{
     if(!LIVE || !authed) return;
@@ -1614,7 +1876,22 @@ function App(){
   },[authed]);
   const up = (key,fn) => setDb(d=>({...d,[key]:fn(d[key])}));
   const go = (v,id,tab) => { setView(v); if(id!==undefined) setPid(id); if(tab) setPtab(tab); if(mainRef.current) mainRef.current.scrollTop=0; };
-  const ctx = {db,setDb,up,notify,go,view,pid,ptab,setPtab,refresh};
+  /* Calendar: Google Calendar in live mode, the sample schedule otherwise */
+  const loadEvents = (from,to) => !LIVE ? Promise.resolve() : api("listEvents",{from:from.toISOString(),to:to.toISOString()})
+    .then(r=>setDb(d=>{ const keep=(d.events||[]).filter(x=>!(new Date(x.start)>=from && new Date(x.start)<to) && !r.events.some(n=>n.id===x.id)); return {...d,events:keep.concat(r.events)}; }))
+    .catch(err=>notify(err.message));
+  const calOps = {
+    create: (ev,send) => LIVE
+      ? api("createEvent",{event:ev,notify:send}).then(r=>{ up("events",es=>(es||[]).concat([r.event])); return r.event; })
+      : Promise.resolve().then(()=>{ const x={...ev,id:uid("ev"),link:"",guests:(ev.guests||[]).map(g=>({email:g.email||g,status:"needsAction"}))}; up("events",es=>(es||[]).concat([x])); return x; }),
+    update: (id,ch,send) => LIVE
+      ? api("updateEvent",{id,changes:ch,notify:send}).then(r=>{ up("events",es=>(es||[]).map(x=>x.id===id?r.event:x)); return r.event; })
+      : Promise.resolve().then(()=>{ up("events",es=>(es||[]).map(x=>x.id!==id?x:{...x,...ch,guests:ch.guests?ch.guests.map(g=>{ const em=g.email||g; return (x.guests||[]).find(o=>o.email===em)||{email:em,status:"needsAction"}; }):x.guests})); }),
+    remove: (id,send) => LIVE
+      ? api("deleteEvent",{id,notify:send}).then(()=>up("events",es=>(es||[]).filter(x=>x.id!==id)))
+      : Promise.resolve().then(()=>up("events",es=>(es||[]).filter(x=>x.id!==id))),
+  };
+  const ctx = {db,setDb,up,notify,go,view,pid,ptab,setPtab,refresh,calOps,loadEvents};
   const nr = needsReply(db).length;
   const header = e("header",{className:"hdr"},
     e("div",{className:"brand"}, e("div",{className:"brand-ic"},CONFIG.logoText), e("div",{className:"brand-name"},CONFIG.companyName)),
@@ -1628,8 +1905,8 @@ function App(){
       booting ? e("div",{className:"pin-wrap"},e("span",{className:"writing"},e("i"),e("i"),e("i"))) : e(PinScreen,{onOk:r=>{ applyLive(r); setAuthed(true); }}));
   }
   const SI = (key,label,icon,extra) => e("button",{className:"si"+(view===key?" on":""),onClick:()=>go(key)},Icon(icon,17),e("span",{className:"nm"},label),extra||null);
-  const nav = [["home","Home","home"],["projects","Projects","folder"],["leads","Leads","inbox"],["social","Social","mega"],["ask","Ask AI","spark"]];
-  const screen = view==="home" ? e(Home,{ctx}) : view==="projects" ? e(Projects,{ctx}) : view==="project" ? e(ProjectView,{ctx}) : view==="vendors" ? e(Vendors,{ctx}) : view==="leads" ? e(Leads,{ctx}) : view==="social" ? e(Social,{ctx}) : e(Ask,{ctx});
+  const nav = [["home","Home","home"],["projects","Projects","folder"],["calendar","Calendar","cal"],["leads","Leads","inbox"],["social","Social","mega"],["ask","Ask AI","spark"]];
+  const screen = view==="home" ? e(Home,{ctx}) : view==="projects" ? e(Projects,{ctx}) : view==="project" ? e(ProjectView,{ctx}) : view==="vendors" ? e(Vendors,{ctx}) : view==="calendar" ? e(CalendarView,{ctx}) : view==="leads" ? e(Leads,{ctx}) : view==="social" ? e(Social,{ctx}) : e(Ask,{ctx});
   const doReset = () => {
     const s = seed();
     setDb(d => LIVE ? {...s,leads:d.leads,posts:d.posts.filter(p=>!p.sample).concat(s.posts),autopilot:d.autopilot} : s);
@@ -1642,6 +1919,7 @@ function App(){
         SI("home","Home","home"),
         SI("projects","Projects","folder"),
         openProjects(db).map(p=>e("button",{key:p.id,className:"si sub"+(view==="project"&&pid===p.id?" on":""),onClick:()=>go("project",p.id,"dashboard")},e("span",{className:"dot",style:{background:PROJ_DOT[p.status]}}),e("span",{className:"nm"},p.name))),
+        SI("calendar","Calendar","cal"),
         SI("vendors","Vendors","users"),
         e("div",{className:"side-label ai"},Icon("spark",12),CONFIG.aiName),
         SI("leads","Leads","inbox", nr? e("span",{className:"cnt"},nr) : null),
