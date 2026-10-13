@@ -306,8 +306,16 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 .photo-pick:hover{border-color:var(--gold)}
 .photo-pick img{width:56px;height:56px;object-fit:cover;border-radius:8px}
 .photo-pick input{display:none}
-.pimg-photo{display:block;width:100%;aspect-ratio:1.4/1;object-fit:cover;max-width:100%}
-.pimg-photo.sq{aspect-ratio:1/1}
+.pimg-photo{display:block;width:100%;height:auto;max-width:100%}
+.ba-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ba-slot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:4/3;border:1px dashed var(--line);border-radius:10px;cursor:pointer;overflow:hidden;background:var(--paper);color:var(--muted);font-size:12.5px;font-weight:600;text-align:center}
+.ba-slot:hover{border-color:var(--gold)}
+.ba-slot input{display:none}
+.ba-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ba-slot .tag{position:absolute;left:8px;bottom:8px;font-size:10.5px;font-weight:700;letter-spacing:.12em;padding:4px 8px;border-radius:5px;background:rgba(11,27,51,.85);color:#fff}
+.ba-slot .tag.after{background:var(--gold);color:var(--navy)}
+.ba-slot .x{position:absolute;right:6px;top:6px;background:rgba(255,255,255,.92)}
+.pimg-photo.sq{aspect-ratio:1/1;object-fit:cover}
 .note{font-size:12.5px;color:var(--muted)}
 .note.bad{color:var(--bad)}
 a.lnk{text-decoration:none}
@@ -1598,6 +1606,31 @@ function PostPreview({p,platform,style,caption,when,photo}){
     ig && e("div",{className:"mock-cap ig"},e("b",null,CONFIG.socialHandle+" "),caption),
     e("div",{className:"mock-f"}, ig ? [e("span",{key:1},"Like"),e("span",{key:2},"Comment"),e("span",{key:3},"Share"),e("span",{key:4},"Save")] : [e("span",{key:1},"Like"),e("span",{key:2},"Comment"),e("span",{key:3},"Share")]));
 }
+/* Before & after: two photos become one branded side-by-side image (square for Instagram, wide for Facebook) */
+function loadImg(src){ return new Promise((ok,fail)=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=()=>fail(new Error("Couldn't read that photo.")); i.src=src; }); }
+function roundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+function combineBeforeAfter(beforeUrl,afterUrl,square){
+  return Promise.all([loadImg(beforeUrl),loadImg(afterUrl)]).then(([A,B])=>{
+    const W = square?1080:1600, H = square?1080:900, gap = Math.round(W*0.005), half = (W-gap)/2, m = Math.round(H*0.04);
+    const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+    g.fillStyle = "#ffffff"; g.fillRect(0,0,W,H);
+    const draw = (img,x) => { const sc = Math.max(half/img.width,H/img.height), sw = half/sc, sh = H/sc; g.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,x,0,half,H); };
+    draw(A,0); draw(B,half+gap);
+    const pill = (text,x,bg,fg) => {
+      g.font = "700 "+Math.round(H*0.034)+"px 'Instrument Sans', Arial, sans-serif";
+      const tw = g.measureText(text).width, ph = Math.round(H*0.068), pw = tw+ph, y = H-ph-m;
+      g.fillStyle = bg; roundRect(g,x,y,pw,ph,ph*0.2); g.fill();
+      g.fillStyle = fg; g.textBaseline = "middle"; g.fillText(text,x+(pw-tw)/2,y+ph/2+1);
+    };
+    pill("BEFORE",m,"rgba(11,27,51,0.88)","#ffffff");
+    pill("AFTER",half+gap+m,CONFIG.accentColor,CONFIG.primaryColor);
+    g.font = "600 "+Math.round(H*0.026)+"px 'Instrument Sans', Arial, sans-serif";
+    const nm = CONFIG.companyName, tw = g.measureText(nm).width, bh = Math.round(H*0.052);
+    g.fillStyle = "rgba(11,27,51,0.62)"; roundRect(g,W-tw-m-bh*0.8,m,tw+bh*0.8,bh,bh*0.25); g.fill();
+    g.fillStyle = "#ffffff"; g.textBaseline = "middle"; g.fillText(nm,W-tw-m-bh*0.4,m+bh/2+1);
+    return c.toDataURL("image/jpeg",0.88);
+  });
+}
 function AutoPostPanel({ctx}){
   const {db,setDb,up,notify} = ctx;
   const st = db.autoSocial || defaultAutoSocial();
@@ -1676,6 +1709,8 @@ function Social({ctx}){
   const [busy,setBusy] = useState(false);
   const [posting,setPosting] = useState("");
   const [photo,setPhoto] = useState(null);
+  const [ba,setBa] = useState({before:null,after:null});
+  const [baImg,setBaImg] = useState(null);
   const [date,setDate] = useState(dOff(1)), [time,setTime] = useState("10:00");
   const p = projById(db,pid) || db.projects[0];
   const gen = v => {
@@ -1683,20 +1718,32 @@ function Social({ctx}){
     if(LIVE){ api("generatePost",{project:projSummary(db,p),platform,style,variant:v}).then(r=>setCaption(r.caption)).catch(err=>notify(err.message)).finally(()=>setBusy(false)); return; }
     setTimeout(()=>{ setCaption(genPost(p,platform==="Facebook"?"Facebook":"Instagram",style,v,db)); setBusy(false); },900);
   };
+  const isBA = style==="Before & After";
+  const squareOut = platform!=="Facebook";
+  useEffect(()=>{
+    if(!isBA || !(ba.before && ba.after)){ setBaImg(null); return; }
+    let live = true;
+    combineBeforeAfter(ba.before,ba.after,squareOut).then(u=>{ if(live) setBaImg(u); }).catch(err=>notify(err.message));
+    return ()=>{ live = false; };
+  },[ba.before,ba.after,squareOut,isBA]);
+  const postPhoto = isBA ? (baImg || ba.after || ba.before || null) : photo;
+  const pickBA = which => ev => { const f = ev.target.files && ev.target.files[0]; ev.target.value=""; if(!f) return; resizePhoto(f).then(u=>setBa(b=>({...b,[which]:u}))).catch(err=>notify(err.message)); };
+  const clearPhotos = () => { setPhoto(null); setBa({before:null,after:null}); };
   const pickPhoto = ev => { const f = ev.target.files && ev.target.files[0]; ev.target.value=""; if(!f) return; resizePhoto(f).then(setPhoto).catch(err=>notify(err.message)); };
   const save = status => {
     const when = new Date(date+"T"+(time||"10:00")).getTime();
     if(status==="Scheduled" && !(when>Date.now())) return notify("Pick a date and time in the future.");
     if(LIVE){
-      if(/Instagram/.test(platform) && !photo) return notify("Instagram posts need a photo. Add one first.");
+      if(/Instagram/.test(platform) && !postPhoto) return notify("Instagram posts need a photo. Add one first.");
+      if(isBA && !(ba.before && ba.after) && (ba.before || ba.after)) notify("Only one photo added, so it will post without the side-by-side.");
       setPosting(status);
       const post = {projectId:p.id,projectName:p.name,platform,style,caption,scheduledAt:when};
-      api(status==="Posted"?"publishPost":"schedulePost",{post,image:photo||""})
-        .then(r=>{ up("posts",ps=>[r.post].concat(ps)); setCaption(""); setPhoto(null); notify(status==="Posted"?"Published to "+platform:"Scheduled for "+whenLabel(date)+" at "+time); })
+      api(status==="Posted"?"publishPost":"schedulePost",{post,image:postPhoto||""})
+        .then(r=>{ up("posts",ps=>[r.post].concat(ps)); setCaption(""); clearPhotos(); notify(status==="Posted"?"Published to "+platform:"Scheduled for "+whenLabel(date)+" at "+time); })
         .catch(err=>notify(err.message)).finally(()=>setPosting(""));
       return;
     }
-    up("posts",ps=>ps.concat([{id:uid("s"),projectId:p.id,platform,style,caption,date:status==="Posted"?dOff(0):date,time,status}])); setCaption(""); setPhoto(null);
+    up("posts",ps=>ps.concat([{id:uid("s"),projectId:p.id,platform,style,caption,date:status==="Posted"?dOff(0):date,time,status}])); setCaption(""); clearPhotos();
     notify(status==="Posted"?"Posted to "+platform:"Scheduled for "+whenLabel(date)+" at "+time);
   };
   const posts = db.posts.slice().sort((a,b)=>(b.date+(b.time||"")).localeCompare(a.date+(a.time||"")));
@@ -1715,6 +1762,13 @@ function Social({ctx}){
         Field("Project",Sel("sp-proj",pid,v=>{setPid(v);setCaption("");},db.projects.map(x=>({v:x.id,l:x.name})))),
         e("div",{className:"f"},"Platform", e("div",{className:"seg"}, PLATFORMS.map(([v,l])=>e("button",{key:v,className:platform===v?"on":"",onClick:()=>{setPlatform(v);setCaption("");}},l)))),
         e("div",{className:"f"},"Post type", e("div",{className:"chips"}, STYLES.map(x=>e("button",{key:x,className:"chip"+(style===x?" on":""),onClick:()=>{setStyle(x);setCaption("");}},x)))),
+        isBA ? e("div",{className:"f"},"Before & after photos",
+          e("div",{className:"ba-pick"}, [["before","Before"],["after","After"]].map(([k,l])=>e("label",{key:k,className:"ba-slot"},
+            e("input",{id:"sp-"+k,type:"file",accept:"image/*",onChange:pickBA(k)}),
+            ba[k] ? e("img",{src:ba[k],alt:l+" photo"}) : e(React.Fragment,null,Icon("plus",20),"Add "+l.toLowerCase()+" photo"),
+            ba[k] ? e("span",{className:"tag"+(k==="after"?" after":"")},l.toUpperCase()) : null,
+            ba[k] ? e("button",{className:"x",onClick:ev=>{ev.preventDefault();setBa(b=>({...b,[k]:null}));},"aria-label":"Remove "+l.toLowerCase()+" photo"},Icon("x",14)) : null))),
+          e("div",{className:"note",style:{textTransform:"none",letterSpacing:0,fontWeight:400}}, ba.before&&ba.after ? "Combined into one side-by-side image"+(squareOut?" (square for Instagram).":".") : "Add both and "+CONFIG.aiName.split(" ")[0]+" combines them into one side-by-side image.")) :
         e("label",{className:"photo-pick"},
           e("input",{id:"sp-photo",type:"file",accept:"image/*",onChange:pickPhoto}),
           photo ? e("img",{src:photo,alt:"Selected photo"}) : e("div",{style:{width:56,height:56,borderRadius:8,background:"var(--paper)",display:"grid",placeItems:"center",color:"var(--muted)"}},Icon("plus",20)),
@@ -1731,7 +1785,7 @@ function Social({ctx}){
           LIVE ? e("div",{className:"note"},"Post now publishes to your real "+(platform==="Facebook + Instagram"?"Facebook Page and Instagram":platform==="Instagram"?"Instagram account":"Facebook Page")+".") : null)),
       e("div",{className:"stack",style:{gap:10}},
         e("div",{className:"eyebrow"},"Preview"),
-        e(PostPreview,{p,platform:platform==="Instagram"?"Instagram":"Facebook",style,photo,caption: caption || (busy?"…":"Press Write it for me and the caption appears here.")}))),
+        e(PostPreview,{p,platform:platform==="Instagram"?"Instagram":"Facebook",style,photo:postPhoto,caption: caption || (busy?"…":"Press Write it for me and the caption appears here.")}))),
     e("div",{className:"card"},
       e("div",{className:"card-h"},e("h2",{className:"t"},"Content calendar"),e("span",{className:"muted"},posts.filter(x=>x.status==="Scheduled").length+" scheduled")),
       posts.length ? posts.map(x=>{ const pr=projById(db,x.projectId); return e("div",{className:"lrow",key:x.id},
