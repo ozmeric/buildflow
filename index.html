@@ -324,6 +324,12 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 .note{font-size:12.5px;color:var(--muted)}
 .note.bad{color:var(--bad)}
 a.lnk{text-decoration:none}
+.mic{width:44px;padding:0;flex-shrink:0}
+.mic.on{background:var(--gold);border-color:var(--gold);color:var(--navy);animation:micpulse 1.4s infinite}
+@keyframes micpulse{0%{box-shadow:0 0 0 0 rgba(201,162,39,.55)}70%{box-shadow:0 0 0 10px rgba(201,162,39,0)}100%{box-shadow:0 0 0 0 rgba(201,162,39,0)}}
+.voice-note{display:flex;align-items:center;gap:7px;padding-top:8px;font-size:12.5px;font-weight:600;color:var(--gold-ink)}
+@media (max-width:820px){ .chat .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px} .chat .chips::-webkit-scrollbar{display:none} .chat .chips .chip{white-space:nowrap;flex-shrink:0} .toast{bottom:auto;top:calc(70px + env(safe-area-inset-top,0px))} }
+.voice-note .dot{width:8px;height:8px;border-radius:50%;background:var(--bad);animation:blink 1s infinite}
 .cal-day{display:grid;grid-template-columns:76px minmax(0,1fr);gap:16px;padding:14px 4px;border-top:1px solid var(--line-2)}
 .cal-day:first-child{border-top:0}
 .cal-day .dl{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
@@ -355,7 +361,8 @@ a.lnk{text-decoration:none}
 <script>
 //<![CDATA[
 
-/* ═══════════════════════ CONFIG — edit this block per prospect ═══════════════════════ */
+/* ═══════════════════════ CONFIG — edit this block per company ═══════════════════════
+   Every other block marked ◆ TRADE-SPECIFIC holds sample data or wording for this trade. */
 const CONFIG = {
   companyName:  "Ridgeline Renovations",
   companyShort: "Ridgeline",
@@ -368,6 +375,8 @@ const CONFIG = {
   primaryColor: "#0B1B33",   // navy
   accentColor:  "#C9A227",   // gold
   aiName:       "Foreman AI",
+  trade:        "home remodeling contractor",            // used in AI prompts
+  hashtags:     ["#RichmondRemodeling","#HomeRenovation","#Richmond","#BeforeAndAfter","#Contractor","#HomeDesign","#LocalBusiness"],
 
   // ── Live mode ── leave apiUrl empty for the offline demo (simulated AI, sample data only)
   apiUrl:       "https://buildflow.weblinallc.workers.dev/",          // Cloudflare Worker URL, e.g. "https://buildflow-demo.weblinallc.workers.dev/"
@@ -424,7 +433,10 @@ const ICONS = {
   spark:"M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z",
   plus:"M12 5v14M5 12h14", check:"M5 12l5 5 9-10", x:"M6 6l12 12M18 6L6 18",
   send:"M22 2L11 13M22 2l-7 20-4-9-9-4z", back:"M15 18l-6-6 6-6",
-  cal:"M4 6h16v14H4zM4 10h16M8 3v4M16 3v4", flag:"M12 3.5l8.5 8.5-8.5 8.5L3.5 12z",
+  cal:"M4 6h16v14H4zM4 10h16M8 3v4M16 3v4",
+  mic:"M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3M8 21h8",
+  vol:"M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12", voloff:"M4 9v6h4l5 4V5L8 9zM17 9l5 6M22 9l-5 6",
+  stop:"M7 7h10v10H7z", flag:"M12 3.5l8.5 8.5-8.5 8.5L3.5 12z",
 };
 const Icon = (n,s) => e("svg",{width:s||18,height:s||18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round","aria-hidden":true},e("path",{d:ICONS[n]}));
 const Pill = (cls,txt,k) => e("span",{className:"pill "+cls,key:k},txt);
@@ -497,6 +509,7 @@ function projSummary(db,p){
 }
 
 /* ── seed data (dates are relative to today so the demo always looks current) ── */
+/* ◆ TRADE-SPECIFIC: rewrite for each company (see the buildflow-foreman skill) */
 function seed(){
   const H = 3600e3, now = Date.now();
   const projects = [
@@ -603,6 +616,7 @@ function seed(){
 }
 
 /* ── "AI" writers (simulated for the demo; the live product connects to a real model) ── */
+/* ◆ TRADE-SPECIFIC: rewrite for each company (see the buildflow-foreman skill) */
 const SERVICE_LINE = {
   "Kitchen Remodel":"Opening up a kitchen is one of our favorite projects. During the visit we'll check whether that wall is load-bearing, so you'll know your options right away.",
   "Bathroom Remodel":"We handle the whole bathroom, from demo and waterproofing to tile and fixtures, with one point of contact the entire way.",
@@ -632,6 +646,7 @@ function genReply(lead,variant){
   return `Hi ${first(lead.name)},\n\n${pick(OPENERS,variant)(lead,svc)} ${SERVICE_LINE[lead.service]||""}${extra.length?" "+extra.join(" "):""}\n\nThe next step is a free on-site consultation, about 45 minutes, where we measure, talk through your goals, and go over budget ranges. I have openings ${nextSlots()}. ${pick(CLOSERS,variant)}\n\nBest,\n${CONFIG.ownerName}\n${CONFIG.companyName}\n${CONFIG.phone}`;
 }
 
+/* ◆ TRADE-SPECIFIC: rewrite for each company (see the buildflow-foreman skill) */
 const TYPE_INFO = {
   "Kitchen Remodel":{tag:"KitchenRemodel",hl:["the wall to the dining room came down, shaker cabinets went in, and quartz counters tie it all together","an open layout, soft-close cabinets, and an island built for family dinners","new cabinets, under-cabinet lighting, and a layout that finally makes sense"],tips:["Plan your outlets before the cabinets go in. Adding one later means cutting into a brand-new backsplash.","Order countertops early. Fabrication usually takes two to three weeks after templating.","Under-cabinet lighting costs very little during a remodel and a lot more after it."]},
   "Bathroom":{tag:"BathroomRemodel",hl:["a curbless shower, heated floors, and a floating vanity","floor-to-ceiling porcelain tile and a frameless glass enclosure","a dated tub swapped for a walk-in shower with a built-in niche"],tips:["Ask any contractor how they waterproof the shower. It matters more than the tile you pick.","A heated floor adds about a day to the schedule and is the upgrade our clients mention most.","Put the shower niche on a wall you can't see from the doorway."]},
@@ -640,12 +655,13 @@ const TYPE_INFO = {
   "Addition":{tag:"HomeAddition",hl:["a new primary suite with a walk-in closet","a sunroom that blends right into the original house","a two-story addition with a mudroom and home office"],tips:["Match the roof pitch and siding to the original house and the addition will look like it was always there.","Plan HVAC early. Many existing systems can't carry an addition without an upgrade.","Expect four to eight weeks for design and permits before any digging starts."]},
   "Full Gut":{tag:"WholeHomeRemodel",hl:["new walls, wiring, plumbing, and finishes throughout","an open plan, new windows, and all-new systems","a complete renovation from studs to trim"],tips:["Do every behind-the-walls upgrade while the walls are open. It never gets cheaper.","Budget a 10 to 15 percent contingency for what you find once demo starts.","Live elsewhere if you can. A gut renovation goes faster in an empty house."]},
 };
+/* ◆ TRADE-SPECIFIC: rewrite for each company (see the buildflow-foreman skill) */
 const OFFERS = ["a free 3D design rendering of your new space","$500 off any project over $20,000","free design consultation and material samples delivered to your door"];
 function genPost(p,platform,style,variant,db){
   const info = TYPE_INFO[p.type] || TYPE_INFO["Full Gut"];
   const type = p.type.toLowerCase();
   const ig = platform==="Instagram";
-  const tags = ["#"+CONFIG.city.replace(/\W/g,"")+"Remodeling","#"+info.tag,"#HomeRenovation","#"+CONFIG.city.replace(/\W/g,""),"#BeforeAndAfter","#Contractor","#HomeDesign","#LocalBusiness"];
+  const tags = [CONFIG.hashtags[0],"#"+info.tag].concat(CONFIG.hashtags.slice(1));
   let body = "";
   if(style==="Before & After"){
     body = [
@@ -753,7 +769,7 @@ function answer(db,q){
     L.push(`• Projected profit: ${money(proj.contract-Math.max(proj.budget,sp))}`);
     return L;
   }
-  return brief(db).map(b=>"• "+b.text.replace(/<\/?b>/g,"**")).concat(["Try asking about budgets, overdue tasks, leads, quotes, or a project by name, like \"How is Hawthorne going?\""]).reduce((a,x,i)=>i===0?["Here's today's rundown:",x]:a.concat([x]),[]);
+  return brief(db).map(b=>"• "+b.text.replace(/<\/?b>/g,"**")).concat(["Try asking about budgets, overdue tasks, leads, quotes, or a project by name, like \"How is "+db.projects[0].area+" going?\""]).reduce((a,x,i)=>i===0?["Here's today's rundown:",x]:a.concat([x]),[]);
 }
 
 function brief(db){
@@ -939,7 +955,7 @@ function parseWhen(s){
   if((m = s.match(/\b(\d{4}-\d{2}-\d{2})\b/))) return m[1];
   if(/\btoday\b/.test(s)) return dOff(0);
   if(/\btomorrow\b/.test(s)) return dOff(1);
-  if((m = s.match(/\bin (\d+|a|one|two|three) (day|days|week|weeks)\b/))){ const n = {a:1,one:1,two:2,three:3}[m[1]] || Number(m[1]); return dOff(n*(/week/.test(m[2])?7:1)); }
+  if((m = s.match(/\b(\d+|a|one|two|three) (day|days|week|weeks) (?:from now|from today|out|later)\b/)) || (m = s.match(/\bin (\d+|a|one|two|three) (day|days|week|weeks)\b/))){ const n = {a:1,one:1,two:2,three:3}[m[1]] || Number(m[1]); return dOff(n*(/week/.test(m[2])?7:1)); }
   if((m = s.match(/\b(next|this|on)?\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b/))){
     const want = WD[m[2]], now = T0.getDay()===0?7:T0.getDay(); let d = (want-now+7)%7 || 7; if(m[1]==="next" && d<3) d += 7; return dOff(d);
   }
@@ -950,6 +966,7 @@ function parseWhen(s){
 const words = s => s.toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>3);
 function matchProject(db,s){ const t=s.toLowerCase(); return db.projects.find(p=>t.includes(p.area.toLowerCase()) || t.includes(p.name.toLowerCase().split(" ")[0]) || t.includes(p.client.toLowerCase().replace(/^the /,"").split(/[ &]/)[0])); }
 function bestMatch(list,s,field){ const w=words(s); let best=null, score=0; list.forEach(x=>{ const sc=words(x[field]).filter(k=>w.indexOf(k)>-1).length; if(sc>score){score=sc;best=x;} }); return best ? {item:best,score} : null; }
+/* ◆ TRADE-SPECIFIC: rewrite for each company (see the buildflow-foreman skill) */
 const EXP_KEYS = [[/tile|lumber|drywall|material|supplies|paint\b|grout/,"Materials"],[/labor|crew|hours|wages/,"Labor"],[/plumb|electric|sub\b|subcontract|hvac/,"Subcontractors"],[/cabinet|counter|quartz|granite/,"Cabinets & Counters"],[/fixture|faucet|vanity|toilet|light/,"Fixtures"],[/permit|inspection fee/,"Permits & Fees"],[/dumpster|haul|demo/,"Demo & Hauling"],[/rent|rental|equipment|lift|scaffold/,"Equipment Rental"]];
 const VEN_KEYS = [[/electric/,"Electrical"],[/plumb/,"Plumbing"],[/hvac|heating|air cond/,"HVAC"],[/drywall/,"Drywall"],[/tile|stone/,"Tile & Stone"],[/counter|quartz|granite/,"Countertops"],[/cabinet/,"Cabinets"],[/glass|mirror|shower door/,"Glass"],[/haul|dumpster|junk/,"Hauling"],[/supply|supplier|lumber|store/,"Supplier"],[/inspect/,"Inspector"]];
 function parseCommand(db,text){
@@ -964,7 +981,7 @@ function parseCommand(db,text){
     const name = (chunks[0]||"").replace(phone,"").replace(email,"").trim();
     const cat = (VEN_KEYS.find(([re])=>re.test(s))||[0,"Other"])[1];
     const notes = chunks.slice(1).filter(c=>c!==phone && c!==email && (cat==="Other" || !VEN_KEYS.some(([re])=>re.test(c.toLowerCase())))).join(", ");
-    if(!name) return {answer:["What's the vendor's name? For example: Add vendor Blue Ridge Painting, painter, (804) 555-0170."],actions:[]};
+    if(!name) return {answer:["What's the vendor's name? For example: Add vendor Smith Electric, electrician, (555) 555-0170."],actions:[]};
     A.push({type:"addVendor",name,category:cat,phone,email,notes});
     return ok(`I'll add **${name}** to your vendors.`);
   }
@@ -1083,6 +1100,7 @@ function parseTime(s){
   if((m = s.match(/\bat (\d{1,2})(?::(\d{2}))?\b(?!\s*(?:days?|weeks?|\/))/))){ let h=Number(m[1]); if(h<7) h+=12; if(h>23) return null; return pad2(h)+":"+(m[2]||"00"); }
   return null;
 }
+/* ◆ TRADE-SPECIFIC: rewrite for each company (see the buildflow-foreman skill) */
 function seedEvents(projects){
   const at = (d,h,m) => { const x=new Date(T0.getTime()+d*DAY); x.setHours(h,m||0,0,0); return x.toISOString(); };
   const E = (title,d,h,m,mins,location,guests,projectId) => ({id:uid("ev"),title,start:at(d,h,m),end:new Date(new Date(at(d,h,m)).getTime()+mins*60000).toISOString(),location,description:"",guests,projectId,link:""});
@@ -1187,7 +1205,7 @@ function CalendarView({ctx}){
 }
 
 /* ── storage (demo resets each day so dates stay realistic) ── */
-const KEY = "buildflow-demo";
+const KEY = "buildflow-" + CONFIG.companyName.toLowerCase().replace(/[^a-z0-9]+/g,"-");
 function loadDb(){ try{ const raw=localStorage.getItem(KEY); if(!raw) return null; const d=JSON.parse(raw); if(d.v!==4 || d.day!==iso(T0)) return null; return d; }catch(err){ return null; } }
 function saveDb(d){ try{ localStorage.setItem(KEY,JSON.stringify(d)); }catch(err){} }
 
@@ -1487,6 +1505,7 @@ function VendorForm({onClose,onSave}){
 }
 
 /* ═══════════════════════ LEADS (AI) ═══════════════════════ */
+/* ◆ TRADE-SPECIFIC: rewrite for each company (see the buildflow-foreman skill) */
 const INCOMING = [
   {name:"Daniel Ortiz",service:"Kitchen Remodel",source:"Website form",est:52000,phone:"(804) 555-0355",email:"d.ortiz@example.com",message:"Hi, looking for a quote on a kitchen refresh. New cabinets, counters, and flooring. Hoping to get started soon if possible."},
   {name:"Rachel Kim",service:"Basement Finish",source:"Google",est:41000,phone:"(804) 555-0372",email:"rachel.kim@example.com",message:"We'd like to finish our basement as a playroom and guest room. Is a free estimate possible next week?"},
@@ -1966,7 +1985,32 @@ function PostRow({x,db,setView,approve,discard,posting}){
 }
 
 /* ═══════════════════════ ASK (AI chat) ═══════════════════════ */
-const SUGGEST = ["What needs my attention today?","Schedule a consultation with Ashley Romero Thursday at 2pm","Move the Hawthorne site walkthrough to Friday at 9am","Add a $450 tile expense to Hawthorne from Tile Gallery","Move Cabinets installed to Oct 23","Add vendor Blue Ridge Painting, painter, (804) 555-0170","What's on my calendar this week?"];
+/* ◆ TRADE-SPECIFIC: rewrite for each company (see the buildflow-foreman skill) */
+const SUGGEST = ["What needs my attention today?","Schedule a consultation with Ashley Romero Thursday at 2pm","Move the Hawthorne site walkthrough to Friday at 9am","Add a $450 tile expense to Hawthorne from Tile Gallery","Move Cabinets installed to two weeks from now","Add vendor Blue Ridge Painting, painter, (804) 555-0170","What's on my calendar this week?"];
+/* ── Voice: speech-to-text and read-aloud, built into Chrome, Edge and Safari (no API key) ── */
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const CAN_TALK = !!SpeechRec, CAN_SPEAK = "speechSynthesis" in window;
+const SAY_APPLY = /^(?:yes|yeah|yep|ok|okay)?[\s,.]*(?:apply|confirm|approve|do it|go ahead|yes|make (?:the|that|it) change|sounds good)(?: it| that| them| the changes?| please)?[.!]?$/i;
+const SAY_CANCEL = /^(?:no|nope)?[\s,.]*(?:cancel|never ?mind|don't|do not|stop|no)(?: it| that| please)?[.!]?$/i;
+function speakText(lines){
+  if(!CAN_SPEAK) return;
+  try{
+    window.speechSynthesis.cancel();
+    const text = (Array.isArray(lines)?lines:[lines]).map(l=>String(l).replace(/\*\*/g,"").replace(/^• /,"").trim()).filter(Boolean)
+      .map(l=>/[.:!?]$/.test(l)?l:l+".").join(" ").slice(0,700);
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = navigator.language || "en-US"; u.rate = 1.05;
+    window.speechSynthesis.speak(u);
+  }catch(err){}
+}
+const stopSpeaking = () => { try{ if(CAN_SPEAK) window.speechSynthesis.cancel(); }catch(err){} };
+const MIC_ERRORS = {
+  "not-allowed": "Microphone is blocked. Allow microphone access for this site in your browser, then tap the mic again.",
+  "service-not-allowed": "Voice input is turned off in this browser. Try Chrome, Edge or Safari.",
+  "no-speech": "Didn't catch that. Tap the mic and try again.",
+  "audio-capture": "No microphone found. Plug one in or check your device settings.",
+  "network": "Voice needs an internet connection.",
+};
 function ActionCard({msg,ctx,onDone}){
   const [items] = useState(()=>msg.actions.map(a=>({a,d:describeAction(ctx.db,a)})));
   const good = items.filter(x=>x.d.ok);
@@ -1977,9 +2021,10 @@ function ActionCard({msg,ctx,onDone}){
       try{ if(CAL_TYPES[x.a.type]) await applyCalendarAction(ctx,x.a); else applyAction(ctx.up,x.a); done++; }
       catch(err){ fails.push(err.message); }
     }
-    setBusy(false); onDone(done ? "applied" : "pending");
+    setBusy(false); onDone(done ? "applied" : "pending", done, fails);
     ctx.notify(fails.length ? (done? done+" applied. ":"")+fails[0] : done+" change"+(done>1?"s":"")+" applied");
   };
+  useEffect(()=>{ if(msg.trigger==="apply" && msg.state==="pending" && good.length && !busy) apply(); },[msg.trigger]);
   return e("div",{className:"acard"},
     e("div",{className:"eyebrow gold",style:{marginBottom:4}},Icon(msg.state==="applied"?"check":"spark",12), msg.state==="applied" ? "Applied" : msg.state==="cancelled" ? "Cancelled" : "Proposed change"+(items.length>1?"s":"")),
     items.map((x,j)=>e("div",{key:j,className:"aitem"+(x.d.ok&&msg.state!=="cancelled"?"":" off")}, e("span",{className:"aic"},Icon(x.d.ok?(x.d.icon||"check"):"x",13)), e("span",null,x.d.text),
@@ -1989,35 +2034,76 @@ function ActionCard({msg,ctx,onDone}){
       e("button",{className:"btn sm",disabled:busy,onClick:apply},Icon("check",14),busy?"Applying…":good.length>1?"Apply "+good.length+" changes":"Apply")) : null);
 }
 function Ask({ctx}){
-  const [msgs,setMsgs] = useState([{r:"ai",t:[`Hi ${CONFIG.ownerName}, I'm ${CONFIG.aiName}. I can see your projects, budgets, tasks, leads, quotes, and vendors. Ask me anything, or tell me what to change, like "add a $300 permit expense to Brookside" or "move Tile complete to Friday". I'll show you the change before I make it.`]}]);
+  const [msgs,setMsgs] = useState([{r:"ai",t:[`Hi ${CONFIG.ownerName}, I'm ${CONFIG.aiName}. I can see your projects, budgets, tasks, leads, quotes, and vendors. Ask me anything, or tell me what to change, like "add a $300 permit expense to ${(ctx.db.projects[2]||ctx.db.projects[0]).area}" or "move ${((ctx.db.milestones.find(m=>!m.done))||{title:"the next milestone"}).title} to Friday". I'll show you the change before I make it.`+(CAN_TALK?" Tap the microphone to talk to me.":"")]}]);
   const [q,setQ] = useState(""), [busy,setBusy] = useState(false);
-  const box = useRef(null);
+  const [listening,setListening] = useState(false);
+  const [voiceOut,setVoiceOut] = useState(()=>store.get("bf-voice")!=="off");
+  const box = useRef(null), recRef = useRef(null), msgsRef = useRef(msgs), sendRef = useRef(null), voiceRef = useRef(voiceOut);
+  msgsRef.current = msgs; voiceRef.current = voiceOut;
   useEffect(()=>{ if(box.current) box.current.scrollTop = box.current.scrollHeight; },[msgs,busy]);
-  const send = t => {
+  useEffect(()=>()=>{ try{ if(recRef.current) recRef.current.abort(); }catch(err){} stopSpeaking(); },[]);
+  const reply = (msg,via) => {
+    setMsgs(m=>m.concat([msg]));
+    if(via==="voice" && voiceRef.current) speakText(msg.t.concat(msg.actions && msg.actions.length ? ["Say apply to make the change, or cancel."] : []));
+  };
+  const send = (t,via) => {
     t=(t||q).trim(); if(!t||busy) return;
-    setQ(""); setMsgs(m=>m.concat([{r:"me",t:[t]}])); setBusy(true);
+    setQ(""); setMsgs(m=>m.concat([{r:"me",t:[t],via}])); setBusy(true);
     if(LIVE){
       const history = msgs.slice(1).map(m=>({role:m.r==="me"?"user":"ai",text:m.t.join("\n")}));
       api("ask",{question:t,history,data:snapshot(ctx.db)})
         .then(r=>{ const lines = toLines(r.answer); const acts = Array.isArray(r.actions) ? r.actions : [];
-          setMsgs(m=>m.concat([{r:"ai",t:lines.length?lines:["Here's what I'll change. Review it, then press Apply."],actions:acts,state:"pending"}])); })
-        .catch(err=>setMsgs(m=>m.concat([{r:"ai",t:["I couldn't reach the AI just now. "+err.message]}])))
+          reply({r:"ai",t:lines.length?lines:["Here's what I'll change. Review it, then press Apply."],actions:acts,state:"pending"},via); })
+        .catch(err=>reply({r:"ai",t:["I couldn't reach the AI just now. "+err.message]},via))
         .finally(()=>setBusy(false));
       return;
     }
     setTimeout(()=>{ const cmd = parseCommand(ctx.db,t);
-      setMsgs(m=>m.concat([cmd ? {r:"ai",t:cmd.answer,actions:cmd.actions,state:"pending"} : {r:"ai",t:answer(ctx.db,t)}])); setBusy(false); },850);
+      reply(cmd ? {r:"ai",t:cmd.answer,actions:cmd.actions,state:"pending"} : {r:"ai",t:answer(ctx.db,t)},via); setBusy(false); },850);
+  };
+  sendRef.current = send;
+  /* What was said: "apply"/"cancel" answers the open change card, anything else is a question */
+  const heard = t => {
+    const ms = msgsRef.current, i = ms.map(m=>!!(m.actions&&m.actions.length&&m.state==="pending")).lastIndexOf(true);
+    if(i>-1 && SAY_APPLY.test(t.trim())){ setQ(""); setMsgs(m=>m.map((x,k)=>k===i?{...x,trigger:"apply"}:x)); return; }
+    if(i>-1 && SAY_CANCEL.test(t.trim())){ setQ(""); setMsgs(m=>m.map((x,k)=>k===i?{...x,state:"cancelled"}:x)); if(voiceRef.current) speakText("Cancelled."); return; }
+    sendRef.current(t,"voice");
+  };
+  const toggleMic = () => {
+    if(listening && recRef.current){ recRef.current.stop(); return; }
+    if(!CAN_TALK){ ctx.notify("Voice isn't supported in this browser. Try Chrome, Edge or Safari."); return; }
+    stopSpeaking();
+    let said = "", failed = false;
+    const rec = new SpeechRec();
+    rec.lang = navigator.language || "en-US"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    rec.onresult = ev => { let interim = ""; for(let k=ev.resultIndex; k<ev.results.length; k++){ const r = ev.results[k]; if(r.isFinal) said += r[0].transcript; else interim += r[0].transcript; } setQ((said+" "+interim).replace(/\s+/g," ").trim()); };
+    rec.onerror = ev => { failed = true; if(ev.error==="aborted") return;
+      const inFrame = (()=>{ try{ return window.self !== window.top; }catch(err){ return true; } })();
+      ctx.notify(ev.error==="not-allowed" && inFrame ? "Voice needs the app opened on its own page. The microphone is blocked inside this preview." : (MIC_ERRORS[ev.error] || "Voice input stopped. Tap the mic to try again.")); };
+    rec.onend = () => { setListening(false); recRef.current = null; const t = said.trim(); if(t && !failed) heard(t); };
+    try{ rec.start(); recRef.current = rec; setListening(true); }
+    catch(err){ ctx.notify("Couldn't start the microphone. Tap it again."); }
+  };
+  const toggleVoiceOut = () => { const v = !voiceOut; setVoiceOut(v); store.set("bf-voice",v?"on":"off"); if(!v) stopSpeaking(); ctx.notify(v?"Foreman will read answers aloud when you talk":"Spoken answers off"); };
+  const onCardDone = (i,state,done) => {
+    const m = msgsRef.current[i];
+    setMsgs(ms=>ms.map((x,k)=>k===i?{...x,state}:x));
+    if(m && m.trigger==="apply" && voiceRef.current) speakText(state==="applied" ? "Done. "+done+" change"+(done>1?"s":"")+" applied." : "That didn't go through. Check the card for details.");
   };
   return e("div",{className:"wrap",style:{paddingBottom:16}},
-    e("div",{className:"ph",style:{marginBottom:12}}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),LIVE?"Assistant · live":"Assistant"), e("h1",{className:"t"},"Ask "+CONFIG.aiName))),
+    e("div",{className:"ph",style:{marginBottom:12}}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),LIVE?"Assistant · live":"Assistant"), e("h1",{className:"t"},"Ask "+CONFIG.aiName)),
+      CAN_TALK && CAN_SPEAK ? e("button",{className:"btn ghost sm","aria-pressed":voiceOut,onClick:toggleVoiceOut,title:"Read answers aloud when you ask by voice"},Icon(voiceOut?"vol":"voloff",15),voiceOut?"Spoken answers on":"Spoken answers off") : null),
     e("div",{className:"card chat"},
       e("div",{className:"msgs",ref:box,"aria-live":"polite"},
-        msgs.map((m,i)=>e("div",{key:i,className:"msg "+m.r}, m.t.map((line,j)=> line.startsWith("• ") ? e("div",{key:j,className:"li"},e("span",null,rich(line.slice(2)))) : e("p",{key:j},rich(line))),
-          m.actions && m.actions.length ? e(ActionCard,{key:"ac",msg:m,ctx,onDone:state=>setMsgs(ms=>ms.map((x,k)=>k===i?{...x,state}:x))}) : null)),
+        msgs.map((m,i)=>e("div",{key:i,className:"msg "+m.r}, m.via==="voice" ? e("div",{style:{fontSize:11,opacity:.7,display:"flex",alignItems:"center",gap:4,marginBottom:2}},Icon("mic",11),"Spoken") : null,
+          m.t.map((line,j)=> line.startsWith("• ") ? e("div",{key:j,className:"li"},e("span",null,rich(line.slice(2)))) : e("p",{key:j},rich(line))),
+          m.actions && m.actions.length ? e(ActionCard,{key:"ac",msg:m,ctx,onDone:(state,done)=>onCardDone(i,state,done)}) : null)),
         busy && e("div",{className:"msg ai"},e("span",{className:"writing"},e("i"),e("i"),e("i")))),
       e("div",{className:"chips",style:{padding:"10px 0 0"}}, SUGGEST.map(s=>e("button",{key:s,className:"chip",onClick:()=>send(s)},s))),
+      listening ? e("div",{className:"voice-note",role:"status"},e("span",{className:"dot"}),"Listening… speak now. Tap the mic again to stop.") : null,
       e("form",{className:"composer",onSubmit:ev=>{ev.preventDefault();send();}},
-        e("input",{id:"ask-input",value:q,onChange:ev=>setQ(ev.target.value),placeholder:"Ask a question or tell Foreman what to change…","aria-label":"Ask a question"}),
+        e("input",{id:"ask-input",value:q,onChange:ev=>setQ(ev.target.value),placeholder:listening?"Listening…":"Ask a question or tell Foreman what to change…","aria-label":"Ask a question"}),
+        e("button",{className:"btn ghost mic"+(listening?" on":""),type:"button",onClick:toggleMic,"aria-pressed":listening,"aria-label":listening?"Stop listening":"Talk to "+CONFIG.aiName,title:CAN_TALK?(listening?"Stop listening":"Talk to "+CONFIG.aiName):"Voice isn't supported in this browser"},Icon(listening?"stop":"mic",18)),
         e("button",{className:"btn",type:"submit",disabled:busy||!q.trim(),"aria-label":"Send"},Icon("send",16)))));
 }
 
